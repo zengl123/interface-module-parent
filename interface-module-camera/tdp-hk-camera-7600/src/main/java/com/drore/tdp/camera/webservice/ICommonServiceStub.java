@@ -5,7 +5,7 @@
  * This file was auto-generated from WSDL
  * by the Apache Axis2 version: 1.5.4  Built on : Dec 19, 2010 (08:18:42 CET)
  */
-package com.drore.cloud.tdp.webservice;
+package com.drore.tdp.camera.webservice;
 
 
 

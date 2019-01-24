@@ -16,7 +16,27 @@
     <packaging>jar</packaging>
 
     <dependencies>
-
+        <dependency>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-kernel</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>servlet-api</artifactId>
+                    <groupId>javax.servlet</groupId>
+                </exclusion>
+            </exclusions>
+            <version>1.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-adb</artifactId>
+            <version>1.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>wsdl4j</groupId>
+            <artifactId>wsdl4j</artifactId>
+            <version>1.5.1</version>
+        </dependency>
     </dependencies>
 
 

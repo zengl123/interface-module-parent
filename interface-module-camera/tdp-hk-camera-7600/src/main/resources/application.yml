@@ -1,0 +1,22 @@
+#服务名称
+spring:
+  application:
+    name: camera-server
+#服务端口
+server:
+  port: 8501
+#tdp配置
+tdp:
+  camera:
+    #定时任务
+    schedule:
+      sync-camera: 0 0/1 * * * ?
+    #第三方接口配置参数
+    params:
+      host:
+      node-index-code:
+#log
+logging:
+  config: classpath:log4j2.xml
+
+
