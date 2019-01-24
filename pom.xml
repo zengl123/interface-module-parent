@@ -11,16 +11,32 @@
         <module>interface-module-environment</module>
         <module>tdp-common</module>
         <module>tdp-domain</module>
+        <module>tdp-api</module>
     </modules>
+
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.0.4.RELEASE</version>
+        <version>2.1.2.RELEASE</version>
+        <relativePath/>
     </parent>
 
     <groupId>com.drore.tdp</groupId>
     <artifactId>interface-module-parent</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>
