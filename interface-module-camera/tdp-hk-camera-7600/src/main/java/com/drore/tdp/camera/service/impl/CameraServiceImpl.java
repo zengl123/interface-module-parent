@@ -91,14 +91,13 @@ public class CameraServiceImpl extends BaseApiService implements ICameraService 
             }
             String groupId = jsonGroup.getString("i_id");
             CameraGroup cameraGroup = new CameraGroup();
-            cameraGroup.setCameraListName(jsonGroup.getString("c_org_name"));
-            cameraGroup.setCameraListNo(groupId);
-            cameraGroup.setIndexCode(orgCode);
+            cameraGroup.setGroupName(jsonGroup.getString("c_org_name"));
+            cameraGroup.setGroupNo(groupId);
             cameraGroup.setSeries("HK7600");
             cameraGroups.add(cameraGroup);
             rowDevice.stream().forEach(objectDevice -> {
                 JSONObject jsonDevice = (JSONObject) objectDevice;
-                CameraDto cameraDto = new CameraDto();
+                CameraDevice cameraDevice = new CameraDevice();
                 //设备id
                 String iid = jsonDevice.getString("i_id");
                 //设备通道号
