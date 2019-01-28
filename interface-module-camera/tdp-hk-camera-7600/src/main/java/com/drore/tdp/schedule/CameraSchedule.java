@@ -1,6 +1,6 @@
-package com.drore.tdp.camera.schedule;
+package com.drore.tdp.schedule;
 
-import com.drore.tdp.camera.service.ICameraService;
+import com.drore.tdp.service.impl.CameraServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,10 +17,15 @@ import org.springframework.stereotype.Component;
 @EnableScheduling
 public class CameraSchedule {
     @Autowired
-    private ICameraService service;
+    private CameraServiceImpl service;
 
     @Scheduled(cron = "${tdp.camera.schedule.sync-camera}")
     public void syncCamera() {
         service.syncCamera();
+    }
+
+    @Scheduled(cron = "${tdp.camera.schedule.save-to-redis}")
+    public void saveToRedis() {
+        service.saveToRedis();
     }
 }

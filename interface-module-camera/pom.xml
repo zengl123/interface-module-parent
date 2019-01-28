@@ -6,6 +6,7 @@
 
     <modules>
         <module>tdp-hk-camera-7600</module>
+        <module>tdp-hk-camera-8700</module>
     </modules>
 
     <parent>
@@ -28,6 +29,16 @@
         <dependency>
             <groupId>com.drore.tdp</groupId>
             <artifactId>tdp-domain</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.drore.tdp</groupId>
+            <artifactId>tdp-sdk</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.drore.tdp</groupId>
+            <artifactId>api-module-camera</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>

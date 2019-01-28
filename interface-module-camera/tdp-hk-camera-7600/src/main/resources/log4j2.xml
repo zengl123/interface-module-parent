@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="off" monitorInterval="600">
     <Properties>
-        <Property name="LOG_HOME">E:\ideaworkspace\zenlin\tdp-module-parent\interface-module-camera\tdp-hk-camera-7600\logs</Property>
+        <Property name="LOG_HOME">
+            E:\ideaworkspace\zenlin\tdp-module-parent\interface-module-camera\tdp-hk-camera-7600\logs
+        </Property>
         <!--部署到服务器时需修改路径-->
         <!--<Property name="LOG_HOME">logs</Property>-->
     </Properties>
@@ -47,7 +49,8 @@
         </RollingRandomAccessFile>
     </Appenders>
     <Loggers>
-        <logger name="com.drore.tdp" level="debug" additivity="true"></logger>
+        <logger name="com.drore.tdp" level="info" additivity="true"></logger>
+        <logger name="com.drore.cloud.sdk.basic.CloudPoolingConnectionManager" level="error" additivity="true"></logger>
         <root level="info">
             <appender-ref ref="Console"/>
             <appender-ref ref="debug_appender"/>

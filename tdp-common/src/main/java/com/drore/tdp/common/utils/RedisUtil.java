@@ -5,6 +5,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
  * 描述:
  * 项目名:tdp-module-parent
@@ -34,8 +36,38 @@ public class RedisUtil {
      * 设置指定 key 的值
      *
      * @param key
+     * @param value
+     */
+    public void set(String key, List value) {
+        redisTemplate.opsForValue().set(key, value);
+    }
+
+    /**
+     * 设置指定 key 的值
+     *
+     * @param key
+     * @param value
+     */
+    public void set(String key, Object value) {
+        redisTemplate.opsForValue().set(key, value);
+    }
+
+    /**
+     * 设置指定 key 的值
+     *
+     * @param key
      */
     public String get(String key) {
         return stringRedisTemplate.opsForValue().get(key);
     }
+
+    /**
+     * 设置指定 key 的值
+     *
+     * @param key
+     */
+    public Object getObject(String key) {
+        return redisTemplate.opsForValue().get(key);
+    }
+
 }

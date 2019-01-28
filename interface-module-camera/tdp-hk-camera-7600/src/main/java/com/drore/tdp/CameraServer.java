@@ -1,4 +1,4 @@
-package com.drore.tdp.camera;
+package com.drore.tdp;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

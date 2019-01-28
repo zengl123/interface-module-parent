@@ -1,5 +1,6 @@
 package com.drore.tdp.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.drore.tdp.common.base.ResponseBase;
 
 /**
@@ -15,12 +16,28 @@ public interface ICameraService {
      *
      * @return
      */
-    ResponseBase syncCamera();
+    ResponseBase update();
 
     /**
      * 实时获取平台监控设备信息
      *
      * @return
      */
-    ResponseBase listCameraDeviceInfo();
+    ResponseBase getCameraDeviceInfo();
+
+    /**
+     * 根据指定条件查询监控列表(默认查询所有)
+     *
+     * @param requestBody
+     * @return
+     */
+    ResponseBase getCameraGroupByRequestBody(JSONObject requestBody);
+
+    /**
+     * 根据
+     *
+     * @param requestBody
+     * @return
+     */
+    ResponseBase getCameraDeviceByRequestBody(JSONObject requestBody);
 }

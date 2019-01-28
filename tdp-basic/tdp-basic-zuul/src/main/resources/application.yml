@@ -1,0 +1,25 @@
+spring:
+  application:
+    #网关服务名称
+    name: tdp-basic-zuul-server
+server:
+  port: 80
+#eureka连接信息
+eureka:
+  instance:
+    hostname: 127.0.0.1
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:8100/eureka/
+#zuul配置
+zuul:
+  routes:
+    #api文档
+    tdp-api:
+      path: /tdp/**
+      serviceId: tdp-api-server
+
+
+

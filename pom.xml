@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.1.2.RELEASE</version>
+        <version>2.0.4.RELEASE</version>
     </parent>
 
     <modules>
@@ -18,23 +18,15 @@
         <module>tdp-common</module>
         <module>tdp-domain</module>
         <module>tdp-api</module>
+        <module>tdp-sdk</module>
+        <module>api-module-camera</module>
+        <module>tdp-basic</module>
     </modules>
 
     <groupId>com.drore.tdp</groupId>
     <artifactId>tdp-module-parent</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-
-
-    <!--配置maven项目的远程仓库-->
-    <repositories>
-        <!-- 阿里云maven仓库-->
-        <repository>
-            <id>nexus-aliyun</id>
-            <name>Nexus aliyun</name>
-            <url>http://maven.aliyun.com/nexus/content/groups/public</url>
-        </repository>
-    </repositories>
 
     <pluginRepositories>
         <!-- 阿里云maven插件仓库-->
@@ -50,6 +42,7 @@
         <swagger2.version>2.4.0</swagger2.version>
         <alibaba.fastjson.version>1.2.47</alibaba.fastjson.version>
         <common.collections.version>3.2.2</common.collections.version>
+        <spring-cloud.version>Finchley.BUILD-SNAPSHOT</spring-cloud.version>
     </properties>
 
     <dependencies>
@@ -110,6 +103,11 @@
             <artifactId>commons-collections</artifactId>
             <version>${common.collections.version}</version>
         </dependency>
+        <!--集成eureka-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -131,4 +129,41 @@
             </plugin>
         </plugins>
     </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <repositories>
+        <!-- 阿里云maven仓库-->
+        <repository>
+            <id>nexus-aliyun</id>
+            <name>Nexus aliyun</name>
+            <url>http://maven.aliyun.com/nexus/content/groups/public</url>
+        </repository>
+        <repository>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 </project>

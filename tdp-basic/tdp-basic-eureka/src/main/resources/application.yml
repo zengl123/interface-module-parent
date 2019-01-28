@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: tdp-basic-eureka-service
+#服务端口号
+server:
+  port: 8100
+#eureka基本信息配置
+eureka:
+  instance:
+    #注册到eureka ip地址
+    hostname: 127.0.0.1
+  client:
+    #因为自己是为注册中心，不需要自己注册自己
+    register-with-eureka: false
+    #因为自己是为注册中心，不需要检索服务
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+      #剔除失效服务间隔
+      eviction-interval-timer-in-ms: 2000
+    server:
+      #是否开启安全保护，默认是开启的，如果默认开启，注册中心的服务列表就算有些服务断开了，也会继续保存
+      enable-self-preservation: false

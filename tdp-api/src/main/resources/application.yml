@@ -1,23 +1,6 @@
-#服务端口
-server:
-  port: 8080
-#log
-logging:
-  config: classpath:log4j2.xml
-#swagger
-swagger:
-  base-package: com.drore.tdp.api
-  title: tdp对外接口文档
-  description: tdp对外接口文档
-  version: v1.0
-  terms-of-service-url: 127.0.0.1:8080/swagger-ui.html
-  contact:
-    url:
-    name: zengling
-    email: 17363645521@163.com
 spring:
   application:
-    name: tdp-api
+    name: tdp-api-server
   redis:
     #数据库索引
     database: 10
@@ -36,3 +19,33 @@ spring:
         min-idle: 0
     #连接超时时间
     timeout: 10000
+#服务端口
+server:
+  port: 8080
+#log
+logging:
+  config: classpath:log4j2.xml
+#swagger
+swagger:
+  base-package: com.drore.tdp.api
+  title: tdp对外接口文档
+  description: tdp对外接口文档
+  version: v1.0
+  terms-of-service-url: 127.0.0.1:8080/swagger-ui.html
+  contact:
+    url:
+    name: zengling
+    email: 17363645521@163.com
+##服务注册到eureka地址
+#eureka连接信息
+eureka:
+  instance:
+    hostname: 127.0.0.1
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:8100/eureka/
+ribbon:
+  ReadTimeout: 120000
+  ConnectTimeout: 120000
