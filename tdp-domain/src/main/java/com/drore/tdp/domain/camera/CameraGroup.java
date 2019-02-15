@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 
 /**
- * 描述:
+ * 描述:监控列表实体
  * 项目名:tdp-module-parent
  *
  * @Author:ZENLIN

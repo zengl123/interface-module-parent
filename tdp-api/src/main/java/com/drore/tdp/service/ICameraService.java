@@ -34,7 +34,7 @@ public interface ICameraService {
     ResponseBase getCameraGroupByRequestBody(JSONObject requestBody);
 
     /**
-     * 根据
+     * 根据指定条件查询监控设备信息
      *
      * @param requestBody
      * @return

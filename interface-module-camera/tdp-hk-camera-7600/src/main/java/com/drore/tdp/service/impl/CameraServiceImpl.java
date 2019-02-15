@@ -3,9 +3,6 @@ package com.drore.tdp.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.drore.cloud.sdk.client.CloudQueryRunner;
-import com.drore.cloud.sdk.common.resp.RestMessage;
-import com.drore.cloud.sdk.domain.Pagination;
 import com.drore.tdp.QueryUtil;
 import com.drore.tdp.bo.ResourceDetailDevice;
 import com.drore.tdp.bo.ResourceDetailGroup;
@@ -17,12 +14,9 @@ import com.drore.tdp.common.utils.RedisUtil;
 import com.drore.tdp.common.utils.XmlUtil;
 import com.drore.tdp.domain.camera.CameraDevice;
 import com.drore.tdp.domain.camera.CameraGroup;
-import com.drore.tdp.domain.table.Table;
 import com.drore.tdp.service.CameraService;
 import com.drore.tdp.webservice.ICommonServiceStub;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -52,9 +46,6 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
     private RedisUtil redisUtil;
     @Autowired
     private QueryUtil queryUtil;
-    @Autowired
-    private CloudQueryRunner runner;
-
 
     @Override
     public ResponseBase syncCamera() {
@@ -67,11 +58,11 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
             Map<String, List> cameraInfo = getCameraInfo();
             cameraGroups = cameraInfo.get("cameraGroup");
             cameraDevices = cameraInfo.get("cameraDevice");
-            responseBase = saveOrUpdateCameraGroup(cameraGroups);
+            responseBase = queryUtil.saveOrUpdateCameraGroup(cameraGroups);
             if (!responseBase.isStatus()) {
                 return error("监控同步失败");
             }
-            responseBase = saveOrUpdateCameraDevice(cameraDevices);
+            responseBase = queryUtil.saveOrUpdateCameraDevice(cameraDevices);
             if (!responseBase.isStatus()) {
                 return error("监控同步失败");
             }
@@ -82,17 +73,6 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
         time = System.currentTimeMillis() - time;
         log.info("监控同步结束：{},耗时:{}毫秒", DateTimeUtil.nowDateTimeString(), time);
         return success(time, "监控同步成功");
-    }
-
-    /**
-     * 获取实时监控设备信息
-     *
-     * @return
-     */
-    @Override
-    public ResponseBase listCameraDeviceInfo() {
-        List<CameraDevice> cameraDevices = (List)redisUtil.getObject(RedisKey.CAMERA_INFO);
-        return success(cameraDevices, "获取实时监控设备信息成功");
     }
 
     /**
@@ -219,146 +199,5 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
             cameraDevice.setModifiedTime(time);
             return cameraDevice;
         }).collect(Collectors.toList());
-    }
-
-    private ResponseBase saveOrUpdateCameraGroup(List<CameraGroup> cameraGroups) {
-        String time = DateTimeUtil.nowDateTimeString();
-        List<CameraGroup> add = new ArrayList<>();
-        List<CameraGroup> update = new ArrayList<>();
-        cameraGroups.stream().forEach(cameraGroup -> {
-            String groupNo = cameraGroup.getGroupNo();
-            Map map = new HashMap(1);
-            map.put("group_no", groupNo);
-            String id = queryUtil.deduplication(Table.CAMERA_GROUP, map);
-            if (StringUtils.isEmpty(id)) {
-                add.add(cameraGroup);
-            } else {
-                cameraGroup.setId(id);
-                update.add(cameraGroup);
-            }
-        });
-        if (CollectionUtils.isNotEmpty(add)) {
-            RestMessage insertBatch = runner.insertBatch(Table.CAMERA_GROUP, JSON.toJSON(add));
-            if (insertBatch != null && insertBatch.isSuccess()) {
-                log.info("新增监控列表成功,共新增:{}条数据", add.size());
-            } else {
-                log.error("新增监控列表失败:{}", insertBatch.getMessage());
-                return error();
-            }
-        } else {
-            log.info("没有新增监控列表");
-        }
-        if (CollectionUtils.isNotEmpty(update)) {
-            RestMessage updateBatch = runner.updateBatch(Table.CAMERA_GROUP, JSON.toJSON(update));
-            if (updateBatch != null && updateBatch.isSuccess()) {
-                log.info("更新监控列表成功,共更新:{}条数据", update.size());
-            } else {
-                log.error("更新监控列表失败:{}", updateBatch.getMessage());
-                return error();
-            }
-        } else {
-            log.info("没有更新监控列表");
-        }
-        deleteOldCameraGroup(time);
-        return success();
-    }
-
-    private ResponseBase saveOrUpdateCameraDevice(List<CameraDevice> cameraDevices) {
-        String time = DateTimeUtil.nowDateTimeString();
-        List<CameraDevice> add = new ArrayList<>();
-        List<CameraDevice> update = new ArrayList<>();
-        cameraDevices.stream().forEach(cameraDevice -> {
-            String deviceNo = cameraDevice.getDeviceNo();
-            String indexCode = cameraDevice.getIndexCode();
-            Map map = new HashMap(1);
-            map.put("device_no", deviceNo);
-            map.put("index_code", indexCode);
-            String id = queryUtil.deduplication(Table.CAMERA_DEVICE, map);
-            if (StringUtils.isEmpty(id)) {
-                add.add(cameraDevice);
-            } else {
-                cameraDevice.setId(id);
-                update.add(cameraDevice);
-            }
-        });
-        if (CollectionUtils.isNotEmpty(add)) {
-            RestMessage insertBatch = runner.insertBatch(Table.CAMERA_DEVICE, JSON.toJSON(add));
-            if (insertBatch != null && insertBatch.isSuccess()) {
-                log.info("监控设备信息新增成功,共新增:{}条数据", add.size());
-            } else {
-                log.error("新增监控信息失败:{}", insertBatch.getMessage());
-                return error();
-            }
-        } else {
-            log.info("没有新增监控设备");
-        }
-        if (CollectionUtils.isNotEmpty(update)) {
-            RestMessage updateBatch = runner.updateBatch(Table.CAMERA_DEVICE, JSON.toJSON(update));
-            if (updateBatch != null && updateBatch.isSuccess()) {
-                log.info("监控设备信息更新成功,共更新:{}条数据", update.size());
-            } else {
-                log.error("监控设备信息更新失败:{}", updateBatch.getMessage());
-                return error();
-            }
-        } else {
-            log.info("没有更新监控设备");
-        }
-        deleteOldCameraDevice(time);
-        return success();
-    }
-
-    /**
-     * 删除平台已删除的监控列表
-     *
-     * @param time
-     */
-    private void deleteOldCameraGroup(String time) {
-        Integer integer = clearByModified(Table.CAMERA_GROUP, time);
-        if (integer > 0) {
-            log.info("删除无效监控列表成功,共删除:{}个", integer);
-        } else {
-            log.info("平台监控列表未发生变化");
-        }
-    }
-
-    /**
-     * 删除平台已删除的监控
-     *
-     * @param time
-     */
-    private void deleteOldCameraDevice(String time) {
-        Integer integer = clearByModified(Table.CAMERA_DEVICE, time);
-        if (integer > 0) {
-            log.info("删除无效监控设备成功,共删除:{}个", integer);
-        } else {
-            log.info("平台监控设备未发生变化");
-        }
-    }
-
-    /**
-     * 清除无效数据
-     *
-     * @param tableName
-     * @param beginTime
-     * @return
-     */
-    public Integer clearByModified(String tableName, String beginTime) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("select id from ")
-                .append(tableName)
-                .append(" where is_deleted='N' and modified_time<'")
-                .append(beginTime)
-                .append("'");
-        Pagination<Map> sql = runner.sql(builder.toString(), 1, 10000);
-        if (sql.getCount() > 0) {
-            List<Map> data = sql.getData();
-            data.stream().forEach(map -> {
-                String id = String.valueOf(map.get("id"));
-                runner.delete(tableName, id);
-            });
-            return sql.getCount();
-        } else {
-            return 0;
-        }
     }
 }

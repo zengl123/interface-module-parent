@@ -23,7 +23,6 @@ public class CameraApplication {
     @Autowired
     private ICameraService service;
 
-
     @ApiOperation(value = "更新监控数据")
     @GetMapping(value = "update")
     public ResponseBase update() {
@@ -41,5 +40,11 @@ public class CameraApplication {
     @RequestMapping(value = "getCameraGroupByRequestBody", method = RequestMethod.POST)
     public ResponseBase getCameraGroupByRequestBody(@RequestBody(required = false) JSONObject requestBody) {
         return service.getCameraGroupByRequestBody(requestBody);
+    }
+
+    @ApiOperation(value = "根据指定条件查询监控列表")
+    @RequestMapping(value = "getCameraDeviceByRequestBody", method = RequestMethod.POST)
+    public ResponseBase getCameraDeviceByRequestBody(@RequestBody(required = false) JSONObject requestBody) {
+        return service.getCameraDeviceByRequestBody(requestBody);
     }
 }

@@ -22,12 +22,4 @@ public interface CameraService {
      */
     @GetMapping(value = "syncCamera")
     ResponseBase syncCamera();
-
-    /**
-     * 获取实时监控设备信息
-     *
-     * @return
-     */
-    @GetMapping(value = "listCameraDeviceInfo")
-    ResponseBase listCameraDeviceInfo();
 }

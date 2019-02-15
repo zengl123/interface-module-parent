@@ -7,6 +7,7 @@
     <modules>
         <module>tdp-hk-camera-7600</module>
         <module>tdp-hk-camera-8700</module>
+        <module>tdp-hk-camera-8200</module>
     </modules>
 
     <parent>
