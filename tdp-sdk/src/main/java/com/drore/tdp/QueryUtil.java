@@ -9,6 +9,8 @@ import com.drore.tdp.common.base.ResponseBase;
 import com.drore.tdp.common.utils.DateTimeUtil;
 import com.drore.tdp.domain.camera.CameraDevice;
 import com.drore.tdp.domain.camera.CameraGroup;
+import com.drore.tdp.domain.park.CarParkParkDevice;
+import com.drore.tdp.domain.park.CarParkRecord;
 import com.drore.tdp.domain.table.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -164,6 +166,20 @@ public class QueryUtil extends BaseApiService {
     }
 
     /**
+     * 删除平台已删除的停车场
+     *
+     * @param time
+     */
+    private void deleteOldCarParkDevice(String time) {
+        Integer integer = clearByModified(Table.CAR_PARK_DEVICE, time);
+        if (integer > 0) {
+            log.info("删除无效停车场设备成功,共删除:{}个", integer);
+        } else {
+            log.info("平台停车场设备未发生变化");
+        }
+    }
+
+    /**
      * 清除无效数据
      *
      * @param tableName
@@ -187,6 +203,113 @@ public class QueryUtil extends BaseApiService {
             return sql.getCount();
         } else {
             return 0;
+        }
+    }
+
+    /****************************************停车场********************************************/
+    public ResponseBase saveOrUpdateCarParkDevice(List<CarParkParkDevice> carParkParkDevices) {
+        if (CollectionUtils.isEmpty(carParkParkDevices)) {
+            return error();
+        }
+        String time = DateTimeUtil.nowDateTimeString();
+        List<CarParkParkDevice> add = new ArrayList<>();
+        List<CarParkParkDevice> update = new ArrayList<>();
+        carParkParkDevices.stream().forEach(carParkParkDevice -> {
+            String deviceNo = carParkParkDevice.getDeviceNo();
+            Map map = new HashMap(1);
+            map.put("device_no", deviceNo);
+            String id = deduplication(Table.CAR_PARK_DEVICE, map);
+            if (StringUtils.isEmpty(id)) {
+                add.add(carParkParkDevice);
+            } else {
+                carParkParkDevice.setId(id);
+                update.add(carParkParkDevice);
+            }
+        });
+        if (CollectionUtils.isNotEmpty(add)) {
+            RestMessage insertBatch = runner.insertBatch(Table.CAR_PARK_DEVICE, JSON.toJSON(add));
+            if (insertBatch != null && insertBatch.isSuccess()) {
+                log.info("停车场设备信息新增成功,共新增:{}条数据", add.size());
+            } else {
+                log.error("新增停车场设备信息失败:{}", insertBatch.getMessage());
+                return error();
+            }
+        } else {
+            log.info("没有新增停车场设备");
+        }
+        if (CollectionUtils.isNotEmpty(update)) {
+            RestMessage updateBatch = runner.updateBatch(Table.CAR_PARK_DEVICE, JSON.toJSON(update));
+            if (updateBatch != null && updateBatch.isSuccess()) {
+                log.info("停车场设备信息更新成功,共更新:{}条数据", update.size());
+            } else {
+                log.error("停车场设备信息更新失败:{}", updateBatch.getMessage());
+                return error();
+            }
+        } else {
+            log.info("没有更新停车场设备");
+        }
+        deleteOldCarParkDevice(time);
+        return success();
+    }
+
+    public ResponseBase saveCarParkRecord(List<CarParkRecord> carParkRecords) {
+        if (CollectionUtils.isEmpty(carParkRecords)) {
+            return error();
+        }
+        RestMessage insertBatch = runner.insertBatch(Table.CAR_PARK_RECORD, JSON.toJSON(carParkRecords));
+        if (insertBatch.isSuccess()) {
+            log.info("新增过车记录成功,共新增:{}条数据", carParkRecords.size());
+            return success();
+        } else {
+            log.error("新增过车记录失败:{}", insertBatch.getMessage());
+            return error();
+        }
+    }
+
+
+    /**
+     * 获取数据同步时间
+     *
+     * @return
+     */
+    public String getSyncTime(Integer code) {
+        Map map = new HashMap(1);
+        map.put("code", code);
+        Pagination<Map> pagination = runner.queryListByExample(Table.SYNC_TIME_CONFIG, map);
+        if (pagination.getSuccess() && pagination.getCount() > 0) {
+            return String.valueOf(pagination.getData().get(0).get("sync_time"));
+        } else {
+            log.error("同步时间未设置");
+            return null;
+        }
+    }
+
+    /**
+     * 新增|更新同步时间配置
+     *
+     * @param map
+     * @return
+     */
+    public ResponseBase saveOrUpdateSyncTime(Map map) {
+        String id = deduplication(Table.SYNC_TIME_CONFIG, map);
+        if (StringUtils.isEmpty(id)) {
+            RestMessage insert = runner.insert(Table.SYNC_TIME_CONFIG, JSON.toJSONString(map));
+            if (insert.isSuccess()) {
+                log.info("新增同步时间成功");
+                return success();
+            } else {
+                log.error("新增同步时间失败");
+                return error();
+            }
+        } else {
+            RestMessage update = runner.update(Table.SYNC_TIME_CONFIG, id, JSON.toJSONString(map));
+            if (update.isSuccess()) {
+                log.info("");
+                return success();
+            } else {
+                log.error("");
+                return error();
+            }
         }
     }
 }

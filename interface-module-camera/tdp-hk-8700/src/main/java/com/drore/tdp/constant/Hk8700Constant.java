@@ -1,6 +1,18 @@
 package com.drore.tdp.constant;
 
+/**
+ * @author ZENLIN
+ */
 public interface Hk8700Constant {
+    Integer PAGE_NO = 1;
+    Integer PAGE_SIZE = 400;
+    /**
+     * 车辆进出
+     */
+    Integer CAR_IN = 0;
+    Integer CAR_OUT = 1;
+
+    /*******************监控******************/
     /**
      * 获取默认用户UUID的接口地址
      */
@@ -51,6 +63,20 @@ public interface Hk8700Constant {
      */
     Integer ALL_CHILD = 0;
 
-    Integer PAGE_NO = 1;
-    Integer PAGE_SIZE = 400;
+    /*******************停车场******************/
+    /**
+     * 获取所有停车场信息
+     */
+    String GET_PARKING_INFO = "/openapi/service/pms/res/getParkingInfos";
+    /**
+     * 获取所有过车记录
+     */
+    String GET_VEHICLE_RECORDS = "/openapi/service/pms/record/getVehicleRecords";
+    /**
+     * 获取停车场临时车缴费记录
+     */
+    String GET_TEMP_CAR_CHARGE_RECORDS = "/openapi/service/pms/record/getTempCarChargeRecords";
+
+    /*******************监控客流******************/
+
 }

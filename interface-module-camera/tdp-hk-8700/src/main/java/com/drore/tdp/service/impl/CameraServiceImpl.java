@@ -3,7 +3,6 @@ package com.drore.tdp.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.drore.cloud.sdk.common.util.MD5Util;
 import com.drore.tdp.QueryUtil;
 import com.drore.tdp.bo.ThirdCameraDevice;
 import com.drore.tdp.bo.ThirdCameraGroup;
@@ -25,8 +24,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.drore.tdp.utils.Hk8700Util.getDefaultUserUuid;
+import static com.drore.tdp.utils.Hk8700Util.postBuildToken;
+
 /**
- * 描述:
+ * 描述:监控模块数据对接
  * 项目名:tdp-module-parent
  *
  * @Author:ZENLIN
@@ -216,29 +218,6 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
     }
 
     /**
-     * 获取默认用户UUID
-     *
-     * @return
-     */
-
-    public String getDefaultUserUuid(String host, String appKey, String secret) {
-        String path = Hk8700Constant.GET_DEFAULT_USER_UUID;
-        JSONObject param = new JSONObject();
-        param.put("time", System.currentTimeMillis());
-        param.put("appkey", appKey);
-        String url = postBuildToken(host, path, param, secret);
-        JSONObject response = HttpClientUtil.httpPost(url, param);
-        String defaultUuid;
-        if (null != response) {
-            defaultUuid = response.getString("data");
-        } else {
-            defaultUuid = "";
-        }
-        log.info("[响应结果-默认用户id] {}", defaultUuid);
-        return defaultUuid;
-    }
-
-    /**
      * 获取子系统列表
      *
      * @return
@@ -405,16 +384,5 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
             result = "";
         }
         return result;
-    }
-
-    public static final String postBuildToken(String host, String path, JSONObject param, String secret) {
-        StringBuilder url = new StringBuilder();
-        url.append(host).append(path);
-        String jsonString = JSONObject.toJSONString(param);
-        StringBuilder builder = new StringBuilder();
-        String md5String = builder.append(path).append(jsonString).append(secret).toString();
-        String token = MD5Util.getMD5Str(md5String).toUpperCase();
-        url.append("?token=").append(token);
-        return url.toString();
     }
 }

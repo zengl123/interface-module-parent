@@ -1,7 +1,7 @@
 #服务名称
 spring:
   application:
-    name: hk-camera-8700-server
+    name: tdp-hk-8700-server
   redis:
     #数据库索引
     database: 10
@@ -25,16 +25,25 @@ server:
   port: 8501
 #tdp配置
 tdp:
-  camera:
-    #定时任务
-    schedule:
-      sync-camera: 0 0 0 0/1 * ?
-      save-to-redis: 0 0/1 * * * ?
+  hk8700:
     #第三方接口配置参数
     params:
-        host: http://172.10.52.2/cms/services/ICommonService?wsdl
-        appKey:
-        secret:
+      host: http://172.10.52.2/cms/services/ICommonService?wsdl
+      appKey:
+      secret:
+    #监控
+    camera:
+      #定时任务
+      schedule:
+        sync-camera: 0 0 0 0/1 * ?
+        save-to-redis: 0 0/1 * * * ?
+    #停车场
+    car-park:
+      schedule:
+        sync-car-park-device: 0 0/1 * * * ?
+        sync-car-park-record: 0 0/1 * * * ?
+      first-sync-time:
+        car-park-record: 2019-01-01 00:00:00
 #log
 logging:
   config: classpath:log4j2.xml
