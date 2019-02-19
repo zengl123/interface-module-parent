@@ -12,5 +12,8 @@ public interface Table {
     String CAMERA_DEVICE = "camera_device";
     String CAR_PARK_DEVICE = "car_park_device";
     String CAR_PARK_RECORD = "car_park_record";
+    String PASSENGER_FLOW_DEVICE = "passenger_flow_device";
+    String PASSENGER_FLOW_RECORD = "passenger_flow_record";
     String SYNC_TIME_CONFIG = "sync_time_config";
+
 }

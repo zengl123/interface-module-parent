@@ -2,7 +2,7 @@
 <Configuration status="off" monitorInterval="600">
     <Properties>
         <Property name="LOG_HOME">
-            E:\ideaworkspace\zenlin\tdp-module-parent\interface-module-camera\tdp-hk-camera-8700\logs
+            E:\ideaworkspace\zenlin\tdp-module-parent\interface-module-camera\tdp-hk-8700\logs
         </Property>
         <!--部署到服务器时需修改路径-->
         <!--<Property name="LOG_HOME">logs</Property>-->

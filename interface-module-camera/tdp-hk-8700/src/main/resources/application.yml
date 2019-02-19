@@ -1,3 +1,6 @@
+#服务端口
+server:
+  port: 8501
 #服务名称
 spring:
   application:
@@ -20,30 +23,26 @@ spring:
         min-idle: 0
     #连接超时时间
     timeout: 10000
-#服务端口
-server:
-  port: 8501
 #tdp配置
 tdp:
-  hk8700:
-    #第三方接口配置参数
-    params:
-      host: http://172.10.52.2/cms/services/ICommonService?wsdl
-      appKey:
-      secret:
-    #监控
-    camera:
-      #定时任务
-      schedule:
-        sync-camera: 0 0 0 0/1 * ?
-        save-to-redis: 0 0/1 * * * ?
+  #第三方接口配置参数
+  params:
+    host: http://172.10.52.2/cms/services/ICommonService?wsdl
+    appKey: fac30958
+    secret: 40b4809c4f204f80a9d81a288e5a4d8c
+  #监控
+  #定时任务
+  schedule:
+    sync-camera: 0 0 0 0/1 * ?
+    save-to-redis: 0 0/1 * * * ?
     #停车场
-    car-park:
-      schedule:
-        sync-car-park-device: 0 0/1 * * * ?
-        sync-car-park-record: 0 0/1 * * * ?
-      first-sync-time:
-        car-park-record: 2019-01-01 00:00:00
+    sync-car-park-device: 0 0/1 * * * ?
+    sync-car-park-record: 0 0/1 * * * ?
+    #监控客流
+    sync-passenger-flow-record: 0 0/1 * * * ?
+  first-sync-time:
+    car-park-record: 2019-02-19 00:00:00
+    passenger-flow-record: 2019-02-19 00:00:00
 #log
 logging:
   config: classpath:log4j2.xml

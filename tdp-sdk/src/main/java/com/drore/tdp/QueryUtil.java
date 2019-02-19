@@ -9,7 +9,8 @@ import com.drore.tdp.common.base.ResponseBase;
 import com.drore.tdp.common.utils.DateTimeUtil;
 import com.drore.tdp.domain.camera.CameraDevice;
 import com.drore.tdp.domain.camera.CameraGroup;
-import com.drore.tdp.domain.park.CarParkParkDevice;
+import com.drore.tdp.domain.flow.PassengerFlowRecord;
+import com.drore.tdp.domain.park.CarParkDevice;
 import com.drore.tdp.domain.park.CarParkRecord;
 import com.drore.tdp.domain.table.Table;
 import lombok.extern.slf4j.Slf4j;
@@ -207,23 +208,20 @@ public class QueryUtil extends BaseApiService {
     }
 
     /****************************************停车场********************************************/
-    public ResponseBase saveOrUpdateCarParkDevice(List<CarParkParkDevice> carParkParkDevices) {
-        if (CollectionUtils.isEmpty(carParkParkDevices)) {
-            return error();
-        }
+    public ResponseBase saveOrUpdateCarParkDevice(List<CarParkDevice> CarParkDevices) {
         String time = DateTimeUtil.nowDateTimeString();
-        List<CarParkParkDevice> add = new ArrayList<>();
-        List<CarParkParkDevice> update = new ArrayList<>();
-        carParkParkDevices.stream().forEach(carParkParkDevice -> {
-            String deviceNo = carParkParkDevice.getDeviceNo();
+        List<CarParkDevice> add = new ArrayList<>();
+        List<CarParkDevice> update = new ArrayList<>();
+        CarParkDevices.stream().forEach(CarParkDevice -> {
+            String deviceNo = CarParkDevice.getDeviceNo();
             Map map = new HashMap(1);
             map.put("device_no", deviceNo);
             String id = deduplication(Table.CAR_PARK_DEVICE, map);
             if (StringUtils.isEmpty(id)) {
-                add.add(carParkParkDevice);
+                add.add(CarParkDevice);
             } else {
-                carParkParkDevice.setId(id);
-                update.add(carParkParkDevice);
+                CarParkDevice.setId(id);
+                update.add(CarParkDevice);
             }
         });
         if (CollectionUtils.isNotEmpty(add)) {
@@ -253,9 +251,6 @@ public class QueryUtil extends BaseApiService {
     }
 
     public ResponseBase saveCarParkRecord(List<CarParkRecord> carParkRecords) {
-        if (CollectionUtils.isEmpty(carParkRecords)) {
-            return error();
-        }
         RestMessage insertBatch = runner.insertBatch(Table.CAR_PARK_RECORD, JSON.toJSON(carParkRecords));
         if (insertBatch.isSuccess()) {
             log.info("新增过车记录成功,共新增:{}条数据", carParkRecords.size());
@@ -266,13 +261,25 @@ public class QueryUtil extends BaseApiService {
         }
     }
 
+    /*************************************监控客流********************************************/
+
+    public ResponseBase savePassengerFlowRecord(List<PassengerFlowRecord> passengerFlowRecords) {
+        RestMessage insertBatch = runner.insertBatch(Table.CAR_PARK_RECORD, JSON.toJSON(passengerFlowRecords));
+        if (insertBatch.isSuccess()) {
+            log.info("新增客流监控数据记录成功,共新增:{}条数据", passengerFlowRecords.size());
+            return success();
+        } else {
+            log.error("新增客流监控数据记录失败:{}", insertBatch.getMessage());
+            return error();
+        }
+    }
 
     /**
      * 获取数据同步时间
      *
      * @return
      */
-    public String getSyncTime(Integer code) {
+    public String getSyncTime(String code) {
         Map map = new HashMap(1);
         map.put("code", code);
         Pagination<Map> pagination = runner.queryListByExample(Table.SYNC_TIME_CONFIG, map);
@@ -291,7 +298,9 @@ public class QueryUtil extends BaseApiService {
      * @return
      */
     public ResponseBase saveOrUpdateSyncTime(Map map) {
-        String id = deduplication(Table.SYNC_TIME_CONFIG, map);
+        Map mapNew = new HashMap(1);
+        mapNew.put("code", map.get("code"));
+        String id = deduplication(Table.SYNC_TIME_CONFIG, mapNew);
         if (StringUtils.isEmpty(id)) {
             RestMessage insert = runner.insert(Table.SYNC_TIME_CONFIG, JSON.toJSONString(map));
             if (insert.isSuccess()) {

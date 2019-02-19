@@ -4,7 +4,7 @@ import com.drore.tdp.common.base.ResponseBase;
 import com.drore.tdp.constant.Hk8700Constant;
 import com.drore.tdp.domain.camera.CameraDevice;
 import com.drore.tdp.domain.camera.CameraGroup;
-import com.drore.tdp.domain.park.CarParkParkDevice;
+import com.drore.tdp.domain.park.CarParkDevice;
 import com.drore.tdp.service.impl.CameraServiceImpl;
 import com.drore.tdp.service.impl.CarParkServiceImpl;
 import com.drore.tdp.utils.Hk8700Util;
@@ -20,11 +20,8 @@ import java.util.List;
  * @Created 2019/2/14  14:30.
  */
 public class Hk8700Test {
-
     private String host = "http://192.168.10.21";
-
     private String appKey = "fac30958";
-
     private String secret = "40b4809c4f204f80a9d81a288e5a4d8c";
 
     @Test
@@ -41,11 +38,13 @@ public class Hk8700Test {
     @Test
     public void testGetCarParkDevice() {
         String userUuid = new Hk8700Util().getDefaultUserUuid(host, appKey, secret);
-        List<CarParkParkDevice> carParkParkDevices = new CarParkServiceImpl().listParkGroup(host, appKey, secret, userUuid);
+        List<CarParkDevice> carParkParkDevices = new CarParkServiceImpl().listParkGroup(host, appKey, secret, userUuid);
     }
     @Test
     public void syncCarParkRecord(){
         String userUuid = new Hk8700Util().getDefaultUserUuid(host, appKey, secret);
         ResponseBase responseBase = new CarParkServiceImpl().getRecord(host, appKey, secret,userUuid,"2019-02-18 10:35:34");
     }
+
+
 }

@@ -8,5 +8,6 @@ package com.drore.tdp.common.constant;
  * @Created 2019/2/18  11:09.
  */
 public interface SyncTimeCode {
-    Integer CAR_PARK_RECORD=10000;
+    String CAR_PARK_RECORD = "10000";
+    String PASSENGER_FLOE_RECORD = "20000";
 }

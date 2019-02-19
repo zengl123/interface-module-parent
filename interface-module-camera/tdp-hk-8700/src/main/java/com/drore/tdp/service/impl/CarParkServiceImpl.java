@@ -8,22 +8,25 @@ import com.drore.tdp.bo.ThirdCarPark;
 import com.drore.tdp.bo.ThirdCarParkRecord;
 import com.drore.tdp.common.base.BaseApiService;
 import com.drore.tdp.common.base.ResponseBase;
-import com.drore.tdp.common.constant.SyncTimeCode;
 import com.drore.tdp.common.utils.DateTimeUtil;
 import com.drore.tdp.common.utils.HttpClientUtil;
 import com.drore.tdp.constant.Hk8700Constant;
-import com.drore.tdp.domain.park.CarParkParkDevice;
+import com.drore.tdp.domain.park.CarParkDevice;
 import com.drore.tdp.domain.park.CarParkRecord;
 import com.drore.tdp.utils.Hk8700Util;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.drore.tdp.common.constant.SyncTimeCode.CAR_PARK_RECORD;
 import static com.drore.tdp.utils.Hk8700Util.getDefaultUserUuid;
 import static com.drore.tdp.utils.Hk8700Util.postBuildToken;
 
@@ -37,13 +40,13 @@ import static com.drore.tdp.utils.Hk8700Util.postBuildToken;
 @Slf4j
 @Service
 public class CarParkServiceImpl extends BaseApiService {
-    @Value("tdp.camera.params.host")
+    @Value("${tdp.params.host}")
     private String host;
-    @Value("tdp.camera.params.appKey")
+    @Value("${tdp.params.appKey}")
     private String appKey;
-    @Value("tdp.camera.params.secret")
+    @Value("${tdp.params.secret}")
     private String secret;
-    @Value("tdp.camera.sync.car-park-record")
+    @Value("${tdp.first-sync-time.car-park-record}")
     private String carParkRecord;
     @Autowired
     private QueryUtil queryUtil;
@@ -57,12 +60,13 @@ public class CarParkServiceImpl extends BaseApiService {
         Long time = System.currentTimeMillis();
         String userUuid = getDefaultUserUuid(host, appKey, secret);
         try {
-            List<CarParkParkDevice> carParkParkDevices = listParkGroup(host, appKey, secret, userUuid);
-            log.debug("[停车场信息] {}", carParkParkDevices);
-            if (null == carParkParkDevices) {
+            List<CarParkDevice> CarParkDevices = listParkGroup(host, appKey, secret, userUuid);
+            log.debug("[停车场信息] {}", CarParkDevices);
+            if (null == CarParkDevices) {
+                log.error("为获取到停车场设备信息");
                 return error("同步停车场设备信息失败");
             }
-            ResponseBase responseBase = queryUtil.saveOrUpdateCarParkDevice(carParkParkDevices);
+            ResponseBase responseBase = queryUtil.saveOrUpdateCarParkDevice(CarParkDevices);
             if (!responseBase.isStatus()) {
                 return error("同步停车场设备信息失败");
             }
@@ -82,7 +86,7 @@ public class CarParkServiceImpl extends BaseApiService {
      */
     public ResponseBase syncRecord() {
         String userUuid = Hk8700Util.getDefaultUserUuid(host, appKey, secret);
-        String beginTime = queryUtil.getSyncTime(SyncTimeCode.CAR_PARK_RECORD);
+        String beginTime = queryUtil.getSyncTime(CAR_PARK_RECORD);
         return getRecord(host, appKey, secret, userUuid, beginTime);
     }
 
@@ -94,7 +98,6 @@ public class CarParkServiceImpl extends BaseApiService {
         Integer pageSize = Hk8700Constant.PAGE_SIZE;
         //发生异常|错误退出标识
         boolean flag = true;
-        ResponseBase responseBase;
         try {
             do {
                 if (StringUtils.isEmpty(beginTime)) {
@@ -147,7 +150,14 @@ public class CarParkServiceImpl extends BaseApiService {
                         carParkRecord.setVehiclePicUrl(thirdCarParkRecord.getVehiclePicUrl());
                         return carParkRecord;
                     }).collect(Collectors.toList());
-                    queryUtil.saveCarParkRecord(carParkRecords);
+                    if (CollectionUtils.isEmpty(carParkRecords)) {
+                        break;
+                    }
+                    ResponseBase responseBase = queryUtil.saveCarParkRecord(carParkRecords);
+                    if (!responseBase.isStatus()) {
+                        flag = false;
+                        break;
+                    }
                 } while (pageNo > 1);
                 if (flag) {
                     beginTime = endTime;
@@ -155,8 +165,19 @@ public class CarParkServiceImpl extends BaseApiService {
                     break;
                 }
             } while (endTime.compareTo(nowTime) < 0);
-
-            return success();
+            if (flag) {
+                Map map = new HashMap(1);
+                map.put("code", CAR_PARK_RECORD);
+                map.put("sync_time", endTime);
+                ResponseBase responseBase = queryUtil.saveOrUpdateSyncTime(map);
+                if (responseBase.isStatus()) {
+                    return success();
+                } else {
+                    return error();
+                }
+            } else {
+                return error();
+            }
         } catch (Exception e) {
             log.error("[同步停车场历史记录异常] {}", e);
             return error();
@@ -168,7 +189,7 @@ public class CarParkServiceImpl extends BaseApiService {
      *
      * @return
      */
-    public List<CarParkParkDevice> listParkGroup(String host, String appKey, String secret, String defaultUuid) {
+    public List<CarParkDevice> listParkGroup(String host, String appKey, String secret, String defaultUuid) {
         String path = Hk8700Constant.GET_PARKING_INFO;
         JSONObject param = new JSONObject();
         param.put("time", System.currentTimeMillis());
@@ -182,16 +203,16 @@ public class CarParkServiceImpl extends BaseApiService {
         JSONArray data = response.getJSONArray("data");
         List<ThirdCarPark> thirdCarParks = JSONObject.parseArray(data.toJSONString(), ThirdCarPark.class);
         return thirdCarParks.stream().map(thirdCarPark -> {
-            CarParkParkDevice carParkParkDevice = new CarParkParkDevice();
-            carParkParkDevice.setDeviceNo(thirdCarPark.getParkUuid());
-            carParkParkDevice.setDeviceName(thirdCarPark.getParkName());
+            CarParkDevice CarParkDevice = new CarParkDevice();
+            CarParkDevice.setDeviceNo(thirdCarPark.getParkUuid());
+            CarParkDevice.setDeviceName(thirdCarPark.getParkName());
             Integer totalPlot = thirdCarPark.getTotalPlot();
             Integer leftPlot = thirdCarPark.getLeftPlot();
             Integer used = totalPlot - leftPlot < 0 ? 0 : totalPlot - leftPlot;
-            carParkParkDevice.setTotalNumber(totalPlot);
-            carParkParkDevice.setRemainderNumber(leftPlot);
-            carParkParkDevice.setUsedNumber(used);
-            return carParkParkDevice;
+            CarParkDevice.setTotalNumber(totalPlot);
+            CarParkDevice.setRemainderNumber(leftPlot);
+            CarParkDevice.setUsedNumber(used);
+            return CarParkDevice;
         }).collect(Collectors.toList());
     }
 }

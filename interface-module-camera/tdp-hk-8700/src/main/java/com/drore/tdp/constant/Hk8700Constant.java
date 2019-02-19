@@ -12,6 +12,8 @@ public interface Hk8700Constant {
     Integer CAR_IN = 0;
     Integer CAR_OUT = 1;
 
+    Integer SUCCESS_RESPONSE = 0;
+
     /*******************监控******************/
     /**
      * 获取默认用户UUID的接口地址
@@ -78,5 +80,6 @@ public interface Hk8700Constant {
     String GET_TEMP_CAR_CHARGE_RECORDS = "/openapi/service/pms/record/getTempCarChargeRecords";
 
     /*******************监控客流******************/
+    String GET_FOOTFALL_DATA = "/openapi/service/vss/footfall/getFootfallData";
 
 }
