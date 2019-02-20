@@ -79,6 +79,30 @@ public class HttpClientUtil {
         HttpPost httpPost = new HttpPost(url);
         // 设置请求和传输超时时间
         httpPost.setConfig(requestConfig);
+        jsonResult = getJsonObject(url, jsonParam, httpClient, jsonResult, httpPost);
+        return jsonResult;
+    }
+
+    /**
+     * post请求传输json参数
+     *
+     * @param url       url地址
+     * @param jsonParam 参数
+     * @return
+     */
+    public static JSONObject httpPost(String url, JSONObject jsonParam,Integer socketTimeout,Integer connectTimeout) {
+        // post请求返回结果
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        JSONObject jsonResult = null;
+        HttpPost httpPost = new HttpPost(url);
+        // 设置请求和传输超时时间
+        RequestConfig config = RequestConfig.custom().setSocketTimeout(socketTimeout).setConnectTimeout(connectTimeout).build();
+        httpPost.setConfig(config);
+        jsonResult = getJsonObject(url, jsonParam, httpClient, jsonResult, httpPost);
+        return jsonResult;
+    }
+
+    private static JSONObject getJsonObject(String url, JSONObject jsonParam, CloseableHttpClient httpClient, JSONObject jsonResult, HttpPost httpPost) {
         try {
             if (null != jsonParam) {
                 // 解决中文乱码问题
@@ -94,7 +118,7 @@ public class HttpClientUtil {
                 String str = EntityUtils.toString(result.getEntity(), "utf-8");
                 // 把json字符串转换成json对象
                 jsonResult = JSONObject.parseObject(str);
-                log.error("[post请求提交成功] {}\n[请求参数] {}", url, jsonParam);
+                log.info("[post请求提交成功] {}\n[请求参数] {}", url, jsonParam);
             } else {
                 log.error("[post请求提交失败] {}\n[请求参数] {}", url, jsonParam);
             }

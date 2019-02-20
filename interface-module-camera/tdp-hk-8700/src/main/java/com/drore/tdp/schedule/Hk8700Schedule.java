@@ -1,6 +1,7 @@
 package com.drore.tdp.schedule;
 
 
+import com.drore.tdp.service.impl.CameraServiceImpl;
 import com.drore.tdp.service.impl.CarParkServiceImpl;
 import com.drore.tdp.service.impl.PassengerFlowServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,24 +21,29 @@ import org.springframework.stereotype.Component;
 @EnableScheduling
 public class Hk8700Schedule {
     @Autowired
-    private CarParkServiceImpl parkServiceimpl;
-
+    private CarParkServiceImpl parkServiceImpl;
     @Autowired
     private PassengerFlowServiceImpl flowServiceImpl;
+    @Autowired
+    private CameraServiceImpl cameraServiceImpl;
 
     //@Scheduled(cron = "${tdp.schedule.sync-car-park-device}")
     public void syncCarParkDevice() {
-        parkServiceimpl.syncCarParkDevice();
+        parkServiceImpl.syncCarParkDevice();
     }
 
     //@Scheduled(cron = "${tdp.schedule.sync-car-park-record}")
     public void syncCarParkRecord() {
-        parkServiceimpl.syncRecord();
+        parkServiceImpl.syncRecord();
     }
 
-    @Scheduled(cron = "${tdp.schedule.sync-passenger-flow-record}")
+    //@Scheduled(cron = "${tdp.schedule.sync-passenger-flow-record}")
     public void syncPassengerFlowRecord() {
         flowServiceImpl.syncPassengerFlowRecord();
     }
 
+    //@Scheduled(cron = "${tdp.schedule.sync-camera}")
+    public void syncCamera() {
+        cameraServiceImpl.syncCamera();
+    }
 }

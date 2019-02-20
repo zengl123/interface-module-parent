@@ -40,11 +40,10 @@ public class Hk8700Test {
         String userUuid = new Hk8700Util().getDefaultUserUuid(host, appKey, secret);
         List<CarParkDevice> carParkParkDevices = new CarParkServiceImpl().listParkGroup(host, appKey, secret, userUuid);
     }
+
     @Test
-    public void syncCarParkRecord(){
+    public void syncCarParkRecord() {
         String userUuid = new Hk8700Util().getDefaultUserUuid(host, appKey, secret);
-        ResponseBase responseBase = new CarParkServiceImpl().getRecord(host, appKey, secret,userUuid,"2019-02-18 10:35:34");
+        ResponseBase responseBase = new CarParkServiceImpl().getRecord(host, appKey, secret, userUuid, "2019-02-18 10:35:34");
     }
-
-
 }

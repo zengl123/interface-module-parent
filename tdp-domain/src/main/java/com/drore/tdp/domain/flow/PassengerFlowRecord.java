@@ -49,10 +49,4 @@ public class PassengerFlowRecord {
     @JSONField(name = "leave_number")
     @SerializedName(value = "leave_number")
     private Integer leaveNumber;
-    /**
-     * 设备IP地址
-     */
-    @JSONField(name = "device_ip")
-    @SerializedName(value = "device_ip")
-    private String deviceIp;
 }

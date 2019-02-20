@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 描述:
@@ -36,6 +37,8 @@ import java.util.Map;
 public class QueryUtil extends BaseApiService {
     @Autowired
     private CloudQueryRunner runner;
+
+    private final static Integer SIZE = 1000;
 
     public String deduplication(String sourceName, Map map) {
         Pagination<Map> pagination = runner.queryListByExample(sourceName, map);
@@ -92,9 +95,6 @@ public class QueryUtil extends BaseApiService {
     }
 
     public ResponseBase saveOrUpdateCameraDevice(List<CameraDevice> cameraDevices) {
-        if (CollectionUtils.isEmpty(cameraDevices)) {
-            return error();
-        }
         String time = DateTimeUtil.nowDateTimeString();
         List<CameraDevice> add = new ArrayList<>();
         List<CameraDevice> update = new ArrayList<>();
@@ -264,13 +264,44 @@ public class QueryUtil extends BaseApiService {
     /*************************************监控客流********************************************/
 
     public ResponseBase savePassengerFlowRecord(List<PassengerFlowRecord> passengerFlowRecords) {
-        RestMessage insertBatch = runner.insertBatch(Table.CAR_PARK_RECORD, JSON.toJSON(passengerFlowRecords));
-        if (insertBatch.isSuccess()) {
+        ResponseBase responseBase = batchSave(Table.CAR_PARK_RECORD, passengerFlowRecords);
+        if (responseBase.isStatus()) {
             log.info("新增客流监控数据记录成功,共新增:{}条数据", passengerFlowRecords.size());
             return success();
         } else {
-            log.error("新增客流监控数据记录失败:{}", insertBatch.getMessage());
+            log.error("新增客流监控数据记录失败:{}", responseBase.getMessage());
             return error();
+        }
+    }
+
+    private ResponseBase batchSave(String sourcesName, List data) {
+        int size = data.size();
+        int count = size / SIZE;
+        String message = "";
+        if (count > 0) {
+            boolean flag = true;
+            for (int i = 0; i <= count; i++) {
+                int end = (i + 1) * SIZE > size ? size : (i + 1) * SIZE;
+                List d = data.subList(i * SIZE, end);
+                RestMessage insertBatch = runner.insertBatch(sourcesName, JSON.toJSON(d));
+                if (!insertBatch.isSuccess()) {
+                    flag = false;
+                    message = insertBatch.getMessage();
+                    break;
+                }
+            }
+            if (flag) {
+                return success();
+            } else {
+                return error(message);
+            }
+        } else {
+            RestMessage insertBatch = runner.insertBatch(sourcesName, JSON.toJSON(data));
+            if (insertBatch.isSuccess()) {
+                return success();
+            } else {
+                return error(insertBatch.getMessage());
+            }
         }
     }
 
@@ -302,22 +333,18 @@ public class QueryUtil extends BaseApiService {
         mapNew.put("code", map.get("code"));
         String id = deduplication(Table.SYNC_TIME_CONFIG, mapNew);
         if (StringUtils.isEmpty(id)) {
-            RestMessage insert = runner.insert(Table.SYNC_TIME_CONFIG, JSON.toJSONString(map));
+            RestMessage insert = runner.insert(Table.SYNC_TIME_CONFIG, JSON.toJSON(map));
             if (insert.isSuccess()) {
-                log.info("新增同步时间成功");
-                return success();
+                return success("新增同步时间配置成功");
             } else {
-                log.error("新增同步时间失败");
-                return error();
+                return error("新增同步时间配置失败");
             }
         } else {
-            RestMessage update = runner.update(Table.SYNC_TIME_CONFIG, id, JSON.toJSONString(map));
+            RestMessage update = runner.update(Table.SYNC_TIME_CONFIG, id, JSON.toJSON(map));
             if (update.isSuccess()) {
-                log.info("");
-                return success();
+                return success("更新同步时间配置成功");
             } else {
-                log.error("");
-                return error();
+                return error("更新同步时间配置失败");
             }
         }
     }

@@ -61,9 +61,9 @@ public class CarParkServiceImpl extends BaseApiService {
         String userUuid = getDefaultUserUuid(host, appKey, secret);
         try {
             List<CarParkDevice> CarParkDevices = listParkGroup(host, appKey, secret, userUuid);
-            log.debug("[停车场信息] {}", CarParkDevices);
+            log.debug("停车场信息 {}", CarParkDevices);
             if (null == CarParkDevices) {
-                log.error("为获取到停车场设备信息");
+                log.error("[未获取到停车场设备信息]");
                 return error("同步停车场设备信息失败");
             }
             ResponseBase responseBase = queryUtil.saveOrUpdateCarParkDevice(CarParkDevices);
@@ -71,7 +71,7 @@ public class CarParkServiceImpl extends BaseApiService {
                 return error("同步停车场设备信息失败");
             }
         } catch (Exception e) {
-            log.error("同步停车场设备信息异常:{}", e);
+            log.error("[同步停车场设备信息异常] {}", e);
             return error("同步停车场设备信息失败");
         }
         time = System.currentTimeMillis() - time;
@@ -99,6 +99,10 @@ public class CarParkServiceImpl extends BaseApiService {
         //发生异常|错误退出标识
         boolean flag = true;
         try {
+            JSONObject param = new JSONObject();
+            param.put("appkey", appKey);
+            param.put("opUserUuid", defaultUuid);
+            param.put("pageSize", pageSize);
             do {
                 if (StringUtils.isEmpty(beginTime)) {
                     beginTime = carParkRecord;
@@ -109,10 +113,6 @@ public class CarParkServiceImpl extends BaseApiService {
                 if (endTime.compareTo(nowTime) > 0) {
                     endTime = nowTime;
                 }
-                JSONObject param = new JSONObject();
-                param.put("appkey", appKey);
-                param.put("opUserUuid", defaultUuid);
-                param.put("pageSize", pageSize);
                 param.put("startTime", DateTimeUtil.stringToTimestamp(beginTime));
                 param.put("endTime", DateTimeUtil.stringToTimestamp(endTime));
                 do {
@@ -148,11 +148,14 @@ public class CarParkServiceImpl extends BaseApiService {
                         carParkRecord.setVehicleType(thirdCarParkRecord.getVehicleType());
                         carParkRecord.setPlatePicUrl(thirdCarParkRecord.getPlatePicUrl());
                         carParkRecord.setVehiclePicUrl(thirdCarParkRecord.getVehiclePicUrl());
+                        carParkRecord.setStatus(carOut);
                         return carParkRecord;
                     }).collect(Collectors.toList());
                     if (CollectionUtils.isEmpty(carParkRecords)) {
+                        log.info("{}-{} 时间段内无过车记录", beginTime, endTime);
                         break;
                     }
+                    log.info("{}-{} 时间段内过车记录同步成功", beginTime, endTime);
                     ResponseBase responseBase = queryUtil.saveCarParkRecord(carParkRecords);
                     if (!responseBase.isStatus()) {
                         flag = false;
@@ -161,20 +164,21 @@ public class CarParkServiceImpl extends BaseApiService {
                 } while (pageNo > 1);
                 if (flag) {
                     beginTime = endTime;
+                    Map map = new HashMap(1);
+                    map.put("code", CAR_PARK_RECORD);
+                    map.put("sync_time", endTime);
+                    ResponseBase responseBase = queryUtil.saveOrUpdateSyncTime(map);
+                    log.info("同步时间配置:{}", responseBase.getMessage());
+                    if (!responseBase.isStatus()) {
+                        flag = false;
+                        break;
+                    }
                 } else {
                     break;
                 }
             } while (endTime.compareTo(nowTime) < 0);
             if (flag) {
-                Map map = new HashMap(1);
-                map.put("code", CAR_PARK_RECORD);
-                map.put("sync_time", endTime);
-                ResponseBase responseBase = queryUtil.saveOrUpdateSyncTime(map);
-                if (responseBase.isStatus()) {
-                    return success();
-                } else {
-                    return error();
-                }
+                return success();
             } else {
                 return error();
             }

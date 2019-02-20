@@ -21,15 +21,11 @@ import com.drore.tdp.utils.Hk8700Util;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.omg.CORBA.PUBLIC_MEMBER;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.drore.tdp.constant.Hk8700Constant.SUCCESS_RESPONSE;
@@ -65,14 +61,25 @@ public class PassengerFlowServiceImpl extends BaseApiService {
         return passengerFlowRecord(host, appKey, secret, userUuid, listCameraUuid, startTime);
     }
 
-
+    /**
+     * 获取客流原始数据
+     *
+     * @param host
+     * @param appKey
+     * @param secret
+     * @param defaultUuid
+     * @param listCameraUuid
+     * @param startTime
+     * @return
+     */
     public ResponseBase passengerFlowRecord(String host, String appKey, String secret, String defaultUuid, List<String> listCameraUuid, String startTime) {
         String path = Hk8700Constant.GET_FOOTFALL_DATA;
         JSONObject param = new JSONObject();
         param.put("appkey", appKey);
         param.put("opUserUuid", defaultUuid);
         String endTime;
-        String nowTime = DateTimeUtil.nowDateString();
+        String nowTime = DateTimeUtil.nowDateTimeString();
+        boolean flag = true;
         try {
             do {
                 if (StringUtils.isEmpty(startTime)) {
@@ -87,20 +94,27 @@ public class PassengerFlowServiceImpl extends BaseApiService {
                 //时间转换成毫秒
                 param.put("footfallStartTime", DateTimeUtil.stringToTimestamp(startTime));
                 param.put("footfallEndTime", DateTimeUtil.stringToTimestamp(endTime));
+                List<PassengerFlowRecord> all = new ArrayList<>();
                 for (int i = 0; i < listCameraUuid.size(); i++) {
                     String cameraUuid = listCameraUuid.get(i);
                     CameraDevice cameraDevice = getCameraDeviceByCameraUuid(cameraUuid);
+                    if (cameraDevice == null) {
+                        flag = false;
+                        break;
+                    }
                     param.put("time", System.currentTimeMillis());
                     param.put("cameraUuid", cameraUuid);
                     String buildToken = Hk8700Util.postBuildToken(host, path, param, secret);
                     JSONObject response = HttpClientUtil.httpPost(buildToken, param);
                     if (response == null) {
+                        flag = false;
                         break;
                     }
                     Integer errorCode = response.getInteger("errorCode");
                     String errorMessage = response.getString("errorMessage");
                     if (!Objects.equals(SUCCESS_RESPONSE, errorCode)) {
                         log.error("接口响应结果错误:{}", errorMessage);
+                        flag = false;
                         break;
                     }
                     JSONArray data = response.getJSONArray("data");
@@ -119,15 +133,44 @@ public class PassengerFlowServiceImpl extends BaseApiService {
                         passengerFlowRecord.setLeaveNumber(thirdPassengerFlowRecord.getPassengersOut());
                         return passengerFlowRecord;
                     }).collect(Collectors.toList());
-                    queryUtil.savePassengerFlowRecord(passengerFlowRecords);
+                    all.addAll(passengerFlowRecords);
+                }
+                //
+                ResponseBase responseBase;
+                if (CollectionUtils.isNotEmpty(all)) {
+                    responseBase = queryUtil.savePassengerFlowRecord(all);
+                    //保存成功进行下一次请求
+                    if (responseBase.isStatus()) {
+                        startTime = endTime;
+                    } else {
+                        flag = false;
+                        break;
+                    }
+                } else {
+                    log.info("{}-{} 所有客流监控点未获取到数据", startTime, endTime);
+                }
+                if (flag) {
+                    Map map = new HashMap(2);
+                    map.put("code", SyncTimeCode.PASSENGER_FLOE_RECORD);
+                    map.put("sync_time", endTime);
+                    responseBase = queryUtil.saveOrUpdateSyncTime(map);
+                    if (responseBase.isStatus()) {
+                        log.info("客流原始数据 {}-{} {}", startTime, endTime, responseBase.getMessage());
+                    } else {
+                        log.error("客流原始数据 {}-{} {}", startTime, endTime, responseBase.getMessage());
+                        break;
+                    }
+                } else {
+                    break;
                 }
             } while (endTime.compareTo(nowTime) < 0);
-            Map map = new HashMap(2);
-            map.put("code", SyncTimeCode.PASSENGER_FLOE_RECORD);
-            map.put("sync_time", endTime);
-            queryUtil.saveOrUpdateSyncTime(map);
-            return success();
+            if (flag) {
+                return success();
+            } else {
+                return error();
+            }
         } catch (Exception e) {
+            log.error("获取客流原始数据异常 {}", e);
             return error();
         }
     }
@@ -160,7 +203,7 @@ public class PassengerFlowServiceImpl extends BaseApiService {
         if (pagination != null && pagination.getCount() > 0) {
             return pagination.getData().get(0);
         } else {
-            log.info("客流监控点:{} 未匹配到对应的IP地址", cameraUuid);
+            log.info("客流监控点-监控点id:{} 未匹配到对应的监控设备信息", cameraUuid);
             return null;
         }
     }

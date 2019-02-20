@@ -62,4 +62,8 @@ public class CarParkRecord extends BaseModel {
     @JSONField(name = "vehicle_pic_url")
     @SerializedName(value = "vehicle_pic_url")
     private String vehiclePicUrl;
+    /**
+     * 车辆进出标识
+     */
+    private Integer status;
 }

@@ -15,6 +15,7 @@ import com.drore.tdp.domain.camera.CameraDevice;
 import com.drore.tdp.domain.camera.CameraGroup;
 import com.drore.tdp.service.CameraService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -62,8 +63,12 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
             return error("海康8700监控数据同步失败");
         }
         String netZones = getNetZones(host, appKey, secret, defaultUserUuid);
-        List<CameraDevice> cameraDevice = getCameraDevice(host, appKey, secret, defaultUserUuid, netZones);
-        responseBase = queryUtil.saveOrUpdateCameraDevice(cameraDevice);
+        List<CameraDevice> cameraDevices = getCameraDevice(host, appKey, secret, defaultUserUuid, netZones);
+        if (CollectionUtils.isEmpty(cameraDevices)) {
+            log.error("未获取到监控点设备信息");
+            return error("海康8700监控数据同步失败");
+        }
+        responseBase = queryUtil.saveOrUpdateCameraDevice(cameraDevices);
         if (responseBase.isStatus()) {
             return success("海康8700监控数据同步成功");
         } else {
@@ -155,7 +160,7 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
      * @param defaultUuid
      * @return
      */
-    public List<ThirdEncoderDevice> listEncoderDevices(String host, String appKey, String secret, String defaultUuid) {
+    private List<ThirdEncoderDevice> listEncoderDevices(String host, String appKey, String secret, String defaultUuid) {
         String path = Hk8700Constant.GET_ENCODER_DEVICES_EX;
         List<JSONObject> list = listDevice(host, appKey, secret, defaultUuid, path);
         return list.stream().map(object -> JSON.toJavaObject(object, ThirdEncoderDevice.class)).collect(Collectors.toList());
@@ -171,7 +176,7 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
      * @param netZoneUuid
      * @return
      */
-    public List<ThirdCameraDevice> listCameraDevices(String host, String appKey, String secret, String defaultUuid, String netZoneUuid) {
+    private List<ThirdCameraDevice> listCameraDevices(String host, String appKey, String secret, String defaultUuid, String netZoneUuid) {
         String path = Hk8700Constant.GET_CAMERA;
         List<JSONObject> list = listDevice(host, appKey, secret, defaultUuid, path);
         List<ThirdCameraDevice> thirdCameraDevices = list.stream().map(object -> JSON.toJavaObject(object, ThirdCameraDevice.class)).collect(Collectors.toList());
@@ -180,10 +185,15 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
             String previewParamByPlanUuid = getPreviewParamByPlanUuid(host, appKey, secret, defaultUuid, cameraUuid, netZoneUuid);
             thirdCameraDevice.setPreviewParam(previewParamByPlanUuid);
             JSONObject recordPlanByCameraUuid = getRecordPlanByCameraUuid(host, appKey, secret, defaultUuid, cameraUuid, netZoneUuid);
-            String recordPlanUuid = recordPlanByCameraUuid.getString("recordPlanUuid");
-            Integer planType = recordPlanByCameraUuid.getInteger("planType");
-            String playBackParamByPlanUuid = getPlayBackParamByPlanUuid(host, appKey, secret, defaultUuid, planType, recordPlanUuid, netZoneUuid);
-            thirdCameraDevice.setPlayBackParam(playBackParamByPlanUuid);
+            //录像计划不为空
+            if (recordPlanByCameraUuid != null) {
+                String recordPlanUuid = recordPlanByCameraUuid.getString("recordPlanUuid");
+                Integer planType = recordPlanByCameraUuid.getInteger("planType");
+                String playBackParamByPlanUuid = getPlayBackParamByPlanUuid(host, appKey, secret, defaultUuid, planType, recordPlanUuid, netZoneUuid);
+                thirdCameraDevice.setPlayBackParam(playBackParamByPlanUuid);
+            } else {
+                log.info("{} 监控录像计划为空,没有回放参数", thirdCameraDevice.getCameraName());
+            }
             return thirdCameraDevice;
         }).collect(Collectors.toList());
     }
@@ -192,20 +202,21 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
         JSONObject param = new JSONObject();
         param.put("appkey", appKey);
         param.put("opUserUuid", defaultUuid);
+        int pageSize = Hk8700Constant.PAGE_SIZE;
+        param.put("pageSize", pageSize);
         List<JSONObject> listResult = new ArrayList();
-        param.put("pageSize", Hk8700Constant.PAGE_SIZE);
-        Integer pageNo = Hk8700Constant.PAGE_NO;
+        int pageNo = Hk8700Constant.PAGE_NO;
         do {
             param.put("time", System.currentTimeMillis());
             param.put("pageNo", pageNo);
-            String url = postBuildToken(host, path, param, secret);
-            JSONObject response = HttpClientUtil.httpPost(url, param);
+            String buildToken = postBuildToken(host, path, param, secret);
+            JSONObject response = HttpClientUtil.httpPost(buildToken, param, 10000, 10000);
             if (null == response) {
                 continue;
             }
             JSONObject data = response.getJSONObject("data");
             Integer total = data.getInteger("total");
-            Integer pageSize = data.getInteger("pageSize");
+            pageSize = data.getInteger("pageSize");
             List list = data.getJSONArray("list");
             if (pageNo == 1) {
                 pageNo = total / pageSize + 1;
@@ -230,14 +241,13 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
         param.put("opUserUuid", defaultUuid);
         String url = postBuildToken(host, path, param, secret);
         JSONObject response = HttpClientUtil.httpPost(url, param);
-        List list;
         String cameraSubSystemCode = "";
         if (null != response) {
-            list = Arrays.asList(response.getJSONArray("data"));
-            List<JSONObject> data = (List<JSONObject>) list;
-            for (int i = 0; i < data.size(); i++) {
-                if (Hk8700Constant.SYSTEM_NAME.equals(data.get(i).get("subSystemName"))) {
-                    cameraSubSystemCode = data.get(i).getString("subSystemUuid");
+            JSONArray data = response.getJSONArray("data");
+            List<JSONObject> list = JSONArray.parseArray(JSON.toJSONString(data), JSONObject.class);
+            for (int i = 0; i < list.size(); i++) {
+                if (Hk8700Constant.SYSTEM_NAME.equals(list.get(i).get("subSystemName"))) {
+                    cameraSubSystemCode = list.get(i).getString("subSystemUuid");
                 }
             }
         }
@@ -305,7 +315,7 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
      * @param netZoneUuid
      * @return
      */
-    public String getPreviewParamByPlanUuid(String host, String appKey, String secret, String opUserUuid, String cameraUuid, String netZoneUuid) {
+    private String getPreviewParamByPlanUuid(String host, String appKey, String secret, String opUserUuid, String cameraUuid, String netZoneUuid) {
         String path = Hk8700Constant.GET_PREVIEW_PARAM_BY_CAMERA_UUID;
         JSONObject param = new JSONObject();
         param.put("time", System.currentTimeMillis());
@@ -330,7 +340,7 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
      * @param cameraUuid
      * @return
      */
-    public JSONObject getRecordPlanByCameraUuid(String host, String appKey, String secret, String defaultUuid, String cameraUuid, String netZoneUuid) {
+    private JSONObject getRecordPlanByCameraUuid(String host, String appKey, String secret, String defaultUuid, String cameraUuid, String netZoneUuid) {
         String path = Hk8700Constant.GET_RECORD_PLAN_BY_CAMERA_UUID;
         JSONObject param = new JSONObject();
         param.put("time", System.currentTimeMillis());
@@ -345,10 +355,15 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
         if (null != response) {
             JSONObject data = response.getJSONObject("data");
             if (data != null) {
-                //获取录像计划类型 一共有三种情况：1、设备存储，2、CVR存储，3、CVM存储
-                return data.getJSONArray("list").getJSONObject(1);
+                JSONArray list = data.getJSONArray("list");
+                System.out.println("list = " + list);
+                if (list != null) {
+                    //获取录像计划类型 一共有三种情况：1、设备存储，2、CVR存储，3、CVM存储
+                    return list.getJSONObject(1);
+                } else {
+                    return null;
+                }
             } else {
-                log.error("[获取录像计划类型失败]");
                 return null;
             }
         } else {
@@ -366,7 +381,7 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
      * @return
      */
 
-    public String getPlayBackParamByPlanUuid(String host, String appKey, String secret, String opUserUuid, Integer planType, String recordPlanUuid, String netZoneUuid) {
+    private String getPlayBackParamByPlanUuid(String host, String appKey, String secret, String opUserUuid, Integer planType, String recordPlanUuid, String netZoneUuid) {
         String path = Hk8700Constant.GET_PLAY_BACK_PARAM_BY_PLAN_UUID;
         JSONObject param = new JSONObject();
         param.put("time", System.currentTimeMillis());
