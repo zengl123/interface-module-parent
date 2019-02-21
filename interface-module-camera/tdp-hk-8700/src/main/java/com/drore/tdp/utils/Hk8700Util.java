@@ -1,10 +1,18 @@
 package com.drore.tdp.utils;
 
 import com.alibaba.fastjson.JSONObject;
+import com.drore.cloud.sdk.client.CloudQueryRunner;
 import com.drore.cloud.sdk.common.util.MD5Util;
+import com.drore.cloud.sdk.domain.Pagination;
 import com.drore.tdp.common.utils.HttpClientUtil;
 import com.drore.tdp.constant.Hk8700Constant;
+import com.drore.tdp.domain.camera.CameraDevice;
+import com.drore.tdp.domain.table.Table;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 描述:
@@ -15,6 +23,9 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class Hk8700Util {
+
+    @Autowired
+    private CloudQueryRunner runner;
 
     /**
      * 获取默认用户UUID

@@ -118,7 +118,7 @@ public class HttpClientUtil {
                 String str = EntityUtils.toString(result.getEntity(), "utf-8");
                 // 把json字符串转换成json对象
                 jsonResult = JSONObject.parseObject(str);
-                log.info("[post请求提交成功] {}\n[请求参数] {}", url, jsonParam);
+                log.debug("[post请求提交成功] {}\n[请求参数] {}", url, jsonParam);
             } else {
                 log.error("[post请求提交失败] {}\n[请求参数] {}", url, jsonParam);
             }

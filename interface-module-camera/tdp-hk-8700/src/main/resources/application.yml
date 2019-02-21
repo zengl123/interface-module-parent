@@ -23,8 +23,31 @@ spring:
         min-idle: 0
     #连接超时时间
     timeout: 10000
+  #activemq配置
+  activemq:
+    broker-url: failover:tcp://192.168.10.21:61618
+    in-memory: false
+    packages:
+      trust-all: false
+    pool:
+      enabled: false
+      expiry-timeout: 0
+      idle-timeout: 30000
+      max-connections: 1
+      #当有"JMSException"时尝试重新连接
+      reconnect-on-exception: true
+  jms:
+    pub-sub-domain: true
 #tdp配置
 tdp:
+  hk:
+    #电脑高清信号,车载设备,人员定位设备,SOS设备
+    invalid-group: 0ae4a873134b46728b05a4bc5a3e0ff6,df75123868d2440b9976a16af886b80e,30d968d4011e4821aca51c931bbb79fe,9dcccf13c5324051ad24d51133124856
+    #active destination
+    #gps
+    gps-destination: openapi.event.topic
+    #客流
+    common-destination: openapi.vss.topic
   #第三方接口配置参数
   params:
     host: http://192.168.10.21
@@ -57,5 +80,6 @@ eureka:
     fetch-registry: true
     service-url:
       defaultZone: http://${eureka.instance.hostname}:8100/eureka/
+
 
 

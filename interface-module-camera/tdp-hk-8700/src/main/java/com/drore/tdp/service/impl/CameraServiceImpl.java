@@ -16,13 +16,17 @@ import com.drore.tdp.domain.camera.CameraGroup;
 import com.drore.tdp.service.CameraService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static com.drore.tdp.utils.Hk8700Util.getDefaultUserUuid;
@@ -46,6 +50,14 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
     private String secret;
     @Autowired
     private QueryUtil queryUtil;
+    @Autowired
+    private ThreadPoolTaskExecutor taskExecutor;
+
+    /**
+     * 无效组织结构(非监控)
+     */
+    @Value("${tdp.hk.invalid-group}")
+    private String invalidGroup;
 
     /**
      * 同步监控数据
@@ -55,24 +67,35 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
     @Override
     public ResponseBase syncCamera() {
         String defaultUserUuid = getDefaultUserUuid(host, appKey, secret);
+        if (StringUtils.isEmpty(defaultUserUuid)) {
+            return error("海康8700监控数据同步失败-获取默认用户id失败");
+        }
         String platSubsystemCode = getPlatSubsystemCode(host, appKey, secret, defaultUserUuid);
+        if (StringUtils.isEmpty(platSubsystemCode)) {
+            return error("海康8700监控数据同步失败-获取视频系统编码失败");
+        }
         String defaultUnit = getDefaultUnit(host, appKey, secret, defaultUserUuid, platSubsystemCode);
+        if (StringUtils.isEmpty(defaultUnit)) {
+            return error("海康8700监控数据同步失败-获取默认控制中心失败");
+        }
         List<CameraGroup> cameraGroups = getCameraGroups(host, appKey, secret, defaultUserUuid, defaultUnit, Hk8700Constant.ALL_CHILD);
+        if (CollectionUtils.isEmpty(cameraGroups)) {
+            return error("海康8700监控数据同步失败-未获取到监控区域信息");
+        }
         ResponseBase responseBase = queryUtil.saveOrUpdateCameraGroup(cameraGroups);
         if (!responseBase.isStatus()) {
-            return error("海康8700监控数据同步失败");
+            return error("海康8700监控数据同步失败-监控列表数据存储失败");
         }
         String netZones = getNetZones(host, appKey, secret, defaultUserUuid);
         List<CameraDevice> cameraDevices = getCameraDevice(host, appKey, secret, defaultUserUuid, netZones);
         if (CollectionUtils.isEmpty(cameraDevices)) {
-            log.error("未获取到监控点设备信息");
-            return error("海康8700监控数据同步失败");
+            return error("海康8700监控数据同步失败-未获取到监控点设备信息");
         }
         responseBase = queryUtil.saveOrUpdateCameraDevice(cameraDevices);
         if (responseBase.isStatus()) {
             return success("海康8700监控数据同步成功");
         } else {
-            return error("海康8700监控数据同步失败");
+            return error("海康8700监控数据同步失败-监控设备数据存储失败");
         }
     }
 
@@ -98,7 +121,8 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
             JSONObject data = response.getJSONObject("data");
             List<ThirdCameraGroup> thirdCameraGroups = JSONArray.parseArray(JSON.toJSONString(data.getJSONArray("list")), ThirdCameraGroup.class);
             log.debug("[响应结果-根据区域UUID集获取区域信息] {}", thirdCameraGroups);
-            list = thirdCameraGroups.stream().map(thirdCameraGroup -> {
+            //过滤没用的组织结构
+            list = thirdCameraGroups.stream().filter(thirdCameraGroup -> !checkGroup(thirdCameraGroup)).map(thirdCameraGroup -> {
                 CameraGroup cameraGroup = new CameraGroup();
                 cameraGroup.setGroupNo(thirdCameraGroup.getRegionUuid());
                 cameraGroup.setGroupName(thirdCameraGroup.getName());
@@ -139,15 +163,15 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
                     cameraDevice.setDeviceIp(encoderIp);
                     cameraDevice.setDevicePort(encoderPort);
                     cameraDevice.setChannelNo(thirdCameraDevice.getCameraChannelNum());
-                    cameraDevice.setStatus(thirdCameraDevice.getOnLineStatus());
+                    cameraDevice.setIsOnline(thirdCameraDevice.getOnLineStatus());
                     cameraDevice.setPreviewParameter(thirdCameraDevice.getPreviewParam());
                     cameraDevice.setPlaybackParameter(thirdCameraDevice.getPlayBackParam());
                     cameraDevice.setDeviceTypeNo(thirdCameraDevice.getCameraType());
                     cameraDevices.add(cameraDevice);
+                    return;
                 }
             });
         });
-        log.debug("cameraDevices:{}", cameraDevices.size());
         return cameraDevices;
     }
 
@@ -179,8 +203,8 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
     private List<ThirdCameraDevice> listCameraDevices(String host, String appKey, String secret, String defaultUuid, String netZoneUuid) {
         String path = Hk8700Constant.GET_CAMERA;
         List<JSONObject> list = listDevice(host, appKey, secret, defaultUuid, path);
-        List<ThirdCameraDevice> thirdCameraDevices = list.stream().map(object -> JSON.toJavaObject(object, ThirdCameraDevice.class)).collect(Collectors.toList());
-        return thirdCameraDevices.stream().map(thirdCameraDevice -> {
+        List<ThirdCameraDevice> thirdCameraDevices = list.stream().map(object -> JSON.toJavaObject(object, ThirdCameraDevice.class)).collect(Collectors.toList()).stream().filter(thirdCameraDevice -> !checkCameraDevice(thirdCameraDevice)).collect(Collectors.toList());
+       /* return thirdCameraDevices.stream().map(thirdCameraDevice -> {
             String cameraUuid = thirdCameraDevice.getCameraUuid();
             String previewParamByPlanUuid = getPreviewParamByPlanUuid(host, appKey, secret, defaultUuid, cameraUuid, netZoneUuid);
             thirdCameraDevice.setPreviewParam(previewParamByPlanUuid);
@@ -195,7 +219,39 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
                 log.info("{} 监控录像计划为空,没有回放参数", thirdCameraDevice.getCameraName());
             }
             return thirdCameraDevice;
-        }).collect(Collectors.toList());
+        }).collect(Collectors.toList());*/
+        List<ThirdCameraDevice> resultList = new ArrayList<>();
+        CompletableFuture[] futures = new CompletableFuture[thirdCameraDevices.size()];
+        for (int i = 0; i < thirdCameraDevices.size(); i++) {
+            resultList.add(new ThirdCameraDevice());
+            ThirdCameraDevice thirdCameraDevice = thirdCameraDevices.get(i);
+            String cameraUuid = thirdCameraDevice.getCameraUuid();
+            final int pos = i;
+            CompletableFuture future = CompletableFuture.supplyAsync(() -> {
+                String previewParamByPlanUuid = getPreviewParamByPlanUuid(host, appKey, secret, defaultUuid, cameraUuid, netZoneUuid);
+                thirdCameraDevice.setPreviewParam(previewParamByPlanUuid);
+                JSONObject recordPlanByCameraUuid = getRecordPlanByCameraUuid(host, appKey, secret, defaultUuid, cameraUuid, netZoneUuid);
+                //录像计划不为空
+                if (recordPlanByCameraUuid != null) {
+                    String recordPlanUuid = recordPlanByCameraUuid.getString("recordPlanUuid");
+                    Integer planType = recordPlanByCameraUuid.getInteger("planType");
+                    String playBackParamByPlanUuid = getPlayBackParamByPlanUuid(host, appKey, secret, defaultUuid, planType, recordPlanUuid, netZoneUuid);
+                    thirdCameraDevice.setPlayBackParam(playBackParamByPlanUuid);
+                } else {
+                    log.info("{} 监控录像计划为空,没有回放参数", thirdCameraDevice.getCameraName());
+                }
+                return thirdCameraDevice;
+            }, taskExecutor).thenAcceptAsync(array -> resultList.set(pos, array));
+            futures[i] = future;
+        }
+        try {
+            CompletableFuture.allOf(futures).get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        return resultList;
     }
 
     private List<JSONObject> listDevice(String host, String appKey, String secret, String defaultUuid, String path) {
@@ -210,7 +266,7 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
             param.put("time", System.currentTimeMillis());
             param.put("pageNo", pageNo);
             String buildToken = postBuildToken(host, path, param, secret);
-            JSONObject response = HttpClientUtil.httpPost(buildToken, param, 10000, 10000);
+            JSONObject response = HttpClientUtil.httpPost(buildToken, param, 100000, 100000);
             if (null == response) {
                 continue;
             }
@@ -251,7 +307,7 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
                 }
             }
         }
-        log.info("[响应结果-视频cameraSubSystemCode] {}", cameraSubSystemCode);
+        log.info("[响应结果-视频系统编码] {}", cameraSubSystemCode);
         return cameraSubSystemCode;
     }
 
@@ -295,7 +351,7 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
         param.put("pageSize", 400);
         String path = Hk8700Constant.GET_NET_ZONES;
         String url = postBuildToken(host, path, param, secret);
-        JSONObject response = HttpClientUtil.httpPost(url, param);
+        JSONObject response = HttpClientUtil.httpPost(url, param, 100000, 100000);
         String netZoneUuid;
         if (null != response) {
             JSONArray data = response.getJSONArray("data");
@@ -324,7 +380,7 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
         param.put("cameraUuid", cameraUuid);
         param.put("netZoneUuid", netZoneUuid);
         String url = postBuildToken(host, path, param, secret);
-        JSONObject response = HttpClientUtil.httpPost(url, param);
+        JSONObject response = HttpClientUtil.httpPost(url, param, 100000, 100000);
         String result;
         if (null != response) {
             result = response.getString("data");
@@ -351,13 +407,12 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
         param.put("pageNo", 1);
         param.put("pageSize", 400);
         String url = postBuildToken(host, path, param, secret);
-        JSONObject response = HttpClientUtil.httpPost(url, param);
+        JSONObject response = HttpClientUtil.httpPost(url, param, 100000, 100000);
         if (null != response) {
             JSONObject data = response.getJSONObject("data");
             if (data != null) {
                 JSONArray list = data.getJSONArray("list");
-                System.out.println("list = " + list);
-                if (list != null) {
+                if (CollectionUtils.isNotEmpty(list)) {
                     //获取录像计划类型 一共有三种情况：1、设备存储，2、CVR存储，3、CVM存储
                     return list.getJSONObject(1);
                 } else {
@@ -391,7 +446,7 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
         param.put("recordPlanUuid", recordPlanUuid);
         param.put("netZoneUuid", netZoneUuid);
         String url = postBuildToken(host, path, param, secret);
-        JSONObject response = HttpClientUtil.httpPost(url, param);
+        JSONObject response = HttpClientUtil.httpPost(url, param, 100000, 100000);
         String result;
         if (null != response) {
             result = response.getString("data");
@@ -399,5 +454,39 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
             result = "";
         }
         return result;
+    }
+
+    /**
+     * 判断是不是有用的组织结构
+     *
+     * @param thirdCameraGroup
+     * @return
+     */
+    private boolean checkGroup(ThirdCameraGroup thirdCameraGroup) {
+        List<String> list = Arrays.asList(invalidGroup.split(","));
+        final boolean[] flag = {false};
+        list.stream().forEach(id -> {
+            if (id.equals(thirdCameraGroup.getRegionUuid())) {
+                flag[0] = true;
+            }
+        });
+        return flag[0];
+    }
+
+    /**
+     * 判断是不是有效监控设备
+     *
+     * @param thirdCameraDevice
+     * @return
+     */
+    private boolean checkCameraDevice(ThirdCameraDevice thirdCameraDevice) {
+        List<String> list = Arrays.asList(invalidGroup.split(","));
+        final boolean[] flag = {false};
+        list.stream().forEach(id -> {
+            if (id.equals(thirdCameraDevice.getRegionUuid())) {
+                flag[0] = true;
+            }
+        });
+        return flag[0];
     }
 }

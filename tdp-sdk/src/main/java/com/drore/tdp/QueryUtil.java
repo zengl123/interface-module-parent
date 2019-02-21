@@ -9,6 +9,7 @@ import com.drore.tdp.common.base.ResponseBase;
 import com.drore.tdp.common.utils.DateTimeUtil;
 import com.drore.tdp.domain.camera.CameraDevice;
 import com.drore.tdp.domain.camera.CameraGroup;
+import com.drore.tdp.domain.flow.PassengerFlowDevice;
 import com.drore.tdp.domain.flow.PassengerFlowRecord;
 import com.drore.tdp.domain.park.CarParkDevice;
 import com.drore.tdp.domain.park.CarParkRecord;
@@ -23,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 描述:
@@ -50,9 +50,6 @@ public class QueryUtil extends BaseApiService {
     }
 
     public ResponseBase saveOrUpdateCameraGroup(List<CameraGroup> cameraGroups) {
-        if (CollectionUtils.isEmpty(cameraGroups)) {
-            return error();
-        }
         String time = DateTimeUtil.nowDateTimeString();
         List<CameraGroup> add = new ArrayList<>();
         List<CameraGroup> update = new ArrayList<>();
@@ -261,6 +258,31 @@ public class QueryUtil extends BaseApiService {
         }
     }
 
+
+    public ResponseBase saveOrUpdatePassengerFlowDevice(PassengerFlowDevice passengerFlowDevice) {
+        String deviceNo = passengerFlowDevice.getDeviceNo();
+        Map map = new HashMap(1);
+        map.put("device_no", deviceNo);
+        String id = deduplication(Table.PASSENGER_FLOW_DEVICE, map);
+        if (StringUtils.isEmpty(id)) {
+            RestMessage insert = runner.insert(Table.PASSENGER_FLOW_DEVICE, JSON.toJSON(passengerFlowDevice));
+            if (insert.isSuccess()) {
+                return success();
+            } else {
+                log.error("[新增客流监控点数据失败]");
+                return error();
+            }
+        } else {
+            RestMessage update = runner.update(Table.PASSENGER_FLOW_DEVICE, id, JSON.toJSON(passengerFlowDevice));
+            if (update.isSuccess()) {
+                return success();
+            } else {
+                log.error("[更新客流监控点数据失败]");
+                return error();
+            }
+        }
+    }
+
     /*************************************监控客流********************************************/
 
     public ResponseBase savePassengerFlowRecord(List<PassengerFlowRecord> passengerFlowRecords) {
@@ -346,6 +368,24 @@ public class QueryUtil extends BaseApiService {
             } else {
                 return error("更新同步时间配置失败");
             }
+        }
+    }
+
+    /**
+     * 根据监控点id获取监控点信息
+     *
+     * @param cameraUuid
+     * @return
+     */
+    public CameraDevice getCameraDeviceByCameraUuid(String cameraUuid) {
+        Map map = new HashMap(1);
+        map.put("index_code", cameraUuid);
+        Pagination<CameraDevice> pagination = runner.queryListByExample(CameraDevice.class, Table.CAMERA_DEVICE, map);
+        if (pagination != null && pagination.getCount() > 0) {
+            return pagination.getData().get(0);
+        } else {
+            log.info("客流监控点-监控点id:{} 未匹配到对应的监控设备信息", cameraUuid);
+            return null;
         }
     }
 }

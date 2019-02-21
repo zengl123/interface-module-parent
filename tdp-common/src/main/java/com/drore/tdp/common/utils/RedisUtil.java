@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 描述:
@@ -40,6 +41,17 @@ public class RedisUtil {
      */
     public void set(String key, List value) {
         redisTemplate.opsForValue().set(key, value);
+    }
+
+    /**
+     * 设置指定 key 的值
+     *
+     * @param key
+     * @param value
+     */
+    public void set(String key, Object value, Long expireTime) {
+        redisTemplate.opsForValue().set(key, value);
+        redisTemplate.expire(key, expireTime, TimeUnit.SECONDS);
     }
 
     /**

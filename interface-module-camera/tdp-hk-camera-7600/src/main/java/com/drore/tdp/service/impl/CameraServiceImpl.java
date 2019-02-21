@@ -8,7 +8,7 @@ import com.drore.tdp.bo.ResourceDetailDevice;
 import com.drore.tdp.bo.ResourceDetailGroup;
 import com.drore.tdp.common.base.BaseApiService;
 import com.drore.tdp.common.base.ResponseBase;
-import com.drore.tdp.common.constant.RedisKey;
+import com.drore.tdp.common.redis.RedisKey;
 import com.drore.tdp.common.utils.DateTimeUtil;
 import com.drore.tdp.common.utils.RedisUtil;
 import com.drore.tdp.common.utils.XmlUtil;

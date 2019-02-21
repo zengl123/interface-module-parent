@@ -1,4 +1,4 @@
-package com.drore.tdp;
+package com.drore.tdp.bo;
 
 import lombok.Data;
 

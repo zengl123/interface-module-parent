@@ -41,4 +41,10 @@ public class PassengerFlowDevice {
      * 峰值
      */
     private Integer threshold;
+    /**
+     * 设备ip
+     */
+    @JSONField(name = "device_ip")
+    @SerializedName(value = "device_ip")
+    private String deviceIp;
 }

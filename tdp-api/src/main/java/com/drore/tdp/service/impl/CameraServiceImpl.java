@@ -6,7 +6,7 @@ import com.drore.cloud.sdk.domain.Pagination;
 import com.drore.tdp.common.base.BaseApiService;
 import com.drore.tdp.common.base.DefaultValue;
 import com.drore.tdp.common.base.ResponseBase;
-import com.drore.tdp.common.constant.RedisKey;
+import com.drore.tdp.common.redis.RedisKey;
 import com.drore.tdp.common.utils.RedisUtil;
 import com.drore.tdp.domain.camera.CameraDevice;
 import com.drore.tdp.domain.camera.CameraGroup;

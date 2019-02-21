@@ -6,7 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.drore.cloud.sdk.client.CloudQueryRunner;
 import com.drore.cloud.sdk.domain.Pagination;
 import com.drore.tdp.QueryUtil;
-import com.drore.tdp.ThirdPassengerFlowRecord;
+import com.drore.tdp.bo.ThirdPassengerFlowRecord;
 import com.drore.tdp.common.base.BaseApiService;
 import com.drore.tdp.common.base.ResponseBase;
 import com.drore.tdp.common.constant.SyncTimeCode;
@@ -97,7 +97,7 @@ public class PassengerFlowServiceImpl extends BaseApiService {
                 List<PassengerFlowRecord> all = new ArrayList<>();
                 for (int i = 0; i < listCameraUuid.size(); i++) {
                     String cameraUuid = listCameraUuid.get(i);
-                    CameraDevice cameraDevice = getCameraDeviceByCameraUuid(cameraUuid);
+                    CameraDevice cameraDevice = queryUtil.getCameraDeviceByCameraUuid(cameraUuid);
                     if (cameraDevice == null) {
                         flag = false;
                         break;
@@ -186,24 +186,6 @@ public class PassengerFlowServiceImpl extends BaseApiService {
             return pagination.getData();
         } else {
             log.info("未获取到监控客流设备信息");
-            return null;
-        }
-    }
-
-    /**
-     * 根据监控点id获取监控点信息
-     *
-     * @param cameraUuid
-     * @return
-     */
-    private CameraDevice getCameraDeviceByCameraUuid(String cameraUuid) {
-        Map map = new HashMap(1);
-        map.put("index_code", cameraUuid);
-        Pagination<CameraDevice> pagination = runner.queryListByExample(CameraDevice.class, Table.CAMERA_DEVICE, map);
-        if (pagination != null && pagination.getCount() > 0) {
-            return pagination.getData().get(0);
-        } else {
-            log.info("客流监控点-监控点id:{} 未匹配到对应的监控设备信息", cameraUuid);
             return null;
         }
     }

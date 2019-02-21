@@ -82,4 +82,14 @@ public interface Hk8700Constant {
     /*******************监控客流******************/
     String GET_FOOTFALL_DATA = "/openapi/service/vss/footfall/getFootfallData";
 
+    /*******************activeMq事件码*****************/
+    /**
+     * gps事件码
+     */
+    int EVENT_TYPE_GPS = 851969;
+    /**
+     * 监控客流
+     */
+    int EVENT_TYPE_PASSENGER_FLOW = 131627;
+
 }
