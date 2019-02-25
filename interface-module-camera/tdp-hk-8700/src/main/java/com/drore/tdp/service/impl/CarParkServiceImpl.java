@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.drore.tdp.common.constant.SyncTimeCode.CAR_PARK_CHARGE;
@@ -243,6 +244,9 @@ public class CarParkServiceImpl extends BaseApiService {
                         break;
                     }
                     JSONObject data = response.getJSONObject("data");
+                    if (Objects.isNull(data)) {
+                        break;
+                    }
                     Integer total = data.getInteger("total");
                     pageSize = data.getInteger("pageSize");
                     if (pageNo == 1) {
