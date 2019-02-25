@@ -18,5 +18,5 @@ public class ElasticsearchUtil {
     @Autowired
     private RestHighLevelClient highLevelClient;
 
-    
+
 }
