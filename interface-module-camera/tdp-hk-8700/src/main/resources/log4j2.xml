@@ -47,10 +47,73 @@
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
             </Policies>
         </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="gps_debug_appender"
+                                 immediateFlush="true" fileName="${LOG_HOME}/gps_debug.log"
+                                 filePattern="${LOG_HOME}/gps_debug.%d{yyyy-MM-dd}.log.gz">
+            <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout>
+                <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%p][%c{40}][%t] %m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+        <RollingRandomAccessFile name="passenger_flow_debug_appender"
+                                 immediateFlush="true" fileName="${LOG_HOME}/passenger_flow_debug.log"
+                                 filePattern="${LOG_HOME}/passenger_flow_debug.%d{yyyy-MM-dd}.log.gz">
+            <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout>
+                <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%p][%c{40}][%t] %m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+        <RollingRandomAccessFile name="car_park_debug_appender"
+                                 immediateFlush="true" fileName="${LOG_HOME}/car_park_debug.log"
+                                 filePattern="${LOG_HOME}/car_park_debug.%d{yyyy-MM-dd}.log.gz">
+            <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout>
+                <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%p][%c{40}][%t] %m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+        <RollingRandomAccessFile name="personnel_density_debug_appender"
+                                 immediateFlush="true" fileName="${LOG_HOME}/personnel_density_debug.log"
+                                 filePattern="${LOG_HOME}/personnel_density_debug.%d{yyyy-MM-dd}.log.gz">
+            <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout>
+                <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%p][%c{40}][%t] %m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
     </Appenders>
+
     <Loggers>
+        <!--自定义日志文件输出-->
+        <logger name="gpsLog" additivity="false" level="debug">
+            <appender-ref ref="gps_debug_appender"/>
+        </logger>
+        <logger name="passengerFlow" additivity="false" level="debug">
+            <appender-ref ref="passenger_flow_debug_appender"/>
+        </logger>
+        <logger name="carPark" additivity="false" level="debug">
+            <appender-ref ref="car_park_debug_appender"/>
+        </logger>
+        <logger name="personnelDensity" additivity="false" level="debug">
+            <appender-ref ref="personnel_density_debug_appender"/>
+        </logger>
+
         <logger name="com.drore.tdp" level="debug" additivity="true"></logger>
         <logger name="com.drore.cloud.sdk.basic.CloudPoolingConnectionManager" level="error" additivity="true"></logger>
+        <logger name="org.apache.activemq.transport.failover.FailoverTransport" level="info" additivity="true"/>
+        <logger name="net.sf.json.xml.XMLSerializer" level="error" additivity="true"/>
+
         <root level="info">
             <appender-ref ref="Console"/>
             <appender-ref ref="debug_appender"/>

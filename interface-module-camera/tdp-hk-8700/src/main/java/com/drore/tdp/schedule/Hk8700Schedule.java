@@ -37,6 +37,12 @@ public class Hk8700Schedule {
         parkServiceImpl.syncRecord();
     }
 
+    @Scheduled(cron = "${tdp.schedule.sync-car-park-charge-record}")
+    public void syncChargeRecord() {
+        parkServiceImpl.syncChargeRecord();
+    }
+
+
     //@Scheduled(cron = "${tdp.schedule.sync-passenger-flow-record}")
     public void syncPassengerFlowRecord() {
         flowServiceImpl.syncPassengerFlowRecord();

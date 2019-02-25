@@ -42,11 +42,11 @@ import static com.drore.tdp.utils.Hk8700Util.postBuildToken;
 @Slf4j
 @Service
 public class CameraServiceImpl extends BaseApiService implements CameraService {
-    @Value("${tdp.params.host}")
+    @Value("${tdp.hk.host}")
     private String host;
-    @Value("${tdp.params.appKey}")
+    @Value("${tdp.hk.appKey}")
     private String appKey;
-    @Value("${tdp.params.secret}")
+    @Value("${tdp.hk.secret}")
     private String secret;
     @Autowired
     private QueryUtil queryUtil;

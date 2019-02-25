@@ -9,6 +9,8 @@ import com.drore.tdp.service.impl.CameraServiceImpl;
 import com.drore.tdp.service.impl.CarParkServiceImpl;
 import com.drore.tdp.utils.Hk8700Util;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -45,5 +47,11 @@ public class Hk8700Test {
     public void syncCarParkRecord() {
         String userUuid = new Hk8700Util().getDefaultUserUuid(host, appKey, secret);
         ResponseBase responseBase = new CarParkServiceImpl().getRecord(host, appKey, secret, userUuid, "2019-02-18 10:35:34");
+    }
+
+    private Logger log = LoggerFactory.getLogger("passengerFlow");
+    @Test
+    public void testLog(){
+        log.debug("aaa");
     }
 }

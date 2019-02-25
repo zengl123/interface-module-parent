@@ -25,4 +25,8 @@ public interface RedisKey {
      * 实时客流监控信息记录
      */
     String PASSENGER_FLOW_INFO = "tdp_passenger_";
+    /**
+     * 人员密度
+     */
+    String PERSONNEL_DENSITY = "tdp_density_";
 }

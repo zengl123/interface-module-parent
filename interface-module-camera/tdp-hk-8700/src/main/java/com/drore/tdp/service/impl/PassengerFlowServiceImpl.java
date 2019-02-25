@@ -6,28 +6,38 @@ import com.alibaba.fastjson.JSONObject;
 import com.drore.cloud.sdk.client.CloudQueryRunner;
 import com.drore.cloud.sdk.domain.Pagination;
 import com.drore.tdp.QueryUtil;
+import com.drore.tdp.bo.EventDis.CommEventLog;
+import com.drore.tdp.bo.ThirdPassengerFlowMq;
 import com.drore.tdp.bo.ThirdPassengerFlowRecord;
 import com.drore.tdp.common.base.BaseApiService;
 import com.drore.tdp.common.base.ResponseBase;
 import com.drore.tdp.common.constant.SyncTimeCode;
+import com.drore.tdp.common.redis.RedisKey;
 import com.drore.tdp.common.utils.DateTimeUtil;
 import com.drore.tdp.common.utils.HttpClientUtil;
+import com.drore.tdp.common.utils.RedisUtil;
+import com.drore.tdp.common.utils.XmlUtil;
 import com.drore.tdp.constant.Hk8700Constant;
 import com.drore.tdp.domain.camera.CameraDevice;
 import com.drore.tdp.domain.flow.PassengerFlowDevice;
 import com.drore.tdp.domain.flow.PassengerFlowRecord;
+import com.drore.tdp.domain.flow.PassengerFlowRecordV2;
 import com.drore.tdp.domain.table.Table;
 import com.drore.tdp.utils.Hk8700Util;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.drore.tdp.common.redis.RedisKey.EXPIRE_TIME_70;
 import static com.drore.tdp.constant.Hk8700Constant.SUCCESS_RESPONSE;
 
 /**
@@ -37,19 +47,21 @@ import static com.drore.tdp.constant.Hk8700Constant.SUCCESS_RESPONSE;
  * @Author:ZENLIN
  * @Created 2019/2/15  11:30.
  */
-@Slf4j
 @Service
 public class PassengerFlowServiceImpl extends BaseApiService {
-    @Value("${tdp.params.host}")
+    private Logger log = LoggerFactory.getLogger("passengerFlow");
+    @Value("${tdp.hk.host}")
     private String host;
-    @Value("${tdp.params.appKey}")
+    @Value("${tdp.hk.appKey}")
     private String appKey;
-    @Value("${tdp.params.secret}")
+    @Value("${tdp.hk.secret}")
     private String secret;
     @Autowired
     private CloudQueryRunner runner;
     @Autowired
     private QueryUtil queryUtil;
+    @Autowired
+    private RedisUtil redisUtil;
     @Value("${tdp.first-sync-time.passenger-flow-record}")
     private String firstSyncTime;
 
@@ -57,6 +69,7 @@ public class PassengerFlowServiceImpl extends BaseApiService {
         List<PassengerFlowDevice> passengerFlowDevices = passengerFlowDeviceList();
         List<String> listCameraUuid = passengerFlowDevices.stream().map(passengerFlowDevice -> passengerFlowDevice.getDeviceNo()).collect(Collectors.toList());
         String startTime = queryUtil.getSyncTime(SyncTimeCode.PASSENGER_FLOE_RECORD);
+        startTime = StringUtils.isEmpty(startTime) ? firstSyncTime : startTime;
         String userUuid = Hk8700Util.getDefaultUserUuid(host, appKey, secret);
         return passengerFlowRecord(host, appKey, secret, userUuid, listCameraUuid, startTime);
     }
@@ -97,9 +110,10 @@ public class PassengerFlowServiceImpl extends BaseApiService {
                 List<PassengerFlowRecord> all = new ArrayList<>();
                 for (int i = 0; i < listCameraUuid.size(); i++) {
                     String cameraUuid = listCameraUuid.get(i);
-                    CameraDevice cameraDevice = queryUtil.getCameraDeviceByCameraUuid(cameraUuid);
-                    if (cameraDevice == null) {
+                    CameraDevice cameraDevice = queryUtil.getCameraDeviceByIndexCode(cameraUuid);
+                    if (Objects.isNull(cameraDevice)) {
                         flag = false;
+                        log.error("客流监控点id {} 未匹配到监控设备信息", cameraUuid);
                         break;
                     }
                     param.put("time", System.currentTimeMillis());
@@ -135,13 +149,13 @@ public class PassengerFlowServiceImpl extends BaseApiService {
                     }).collect(Collectors.toList());
                     all.addAll(passengerFlowRecords);
                 }
-                //
                 ResponseBase responseBase;
                 if (CollectionUtils.isNotEmpty(all)) {
                     responseBase = queryUtil.savePassengerFlowRecord(all);
                     //保存成功进行下一次请求
                     if (responseBase.isStatus()) {
-                        startTime = endTime;
+                        log.debug("新增客流监控数据记录成功,共新增:{}条数据", all.size());
+                        startTime = DateTimeUtil.stringPlusSeconds(endTime, 1);
                     } else {
                         flag = false;
                         break;
@@ -149,18 +163,12 @@ public class PassengerFlowServiceImpl extends BaseApiService {
                 } else {
                     log.info("{}-{} 所有客流监控点未获取到数据", startTime, endTime);
                 }
-                if (flag) {
-                    Map map = new HashMap(2);
-                    map.put("code", SyncTimeCode.PASSENGER_FLOE_RECORD);
-                    map.put("sync_time", endTime);
-                    responseBase = queryUtil.saveOrUpdateSyncTime(map);
-                    if (responseBase.isStatus()) {
-                        log.info("客流原始数据 {}-{} {}", startTime, endTime, responseBase.getMessage());
-                    } else {
-                        log.error("客流原始数据 {}-{} {}", startTime, endTime, responseBase.getMessage());
-                        break;
-                    }
+                responseBase = queryUtil.saveOrUpdateSyncTime(SyncTimeCode.PASSENGER_FLOE_RECORD, startTime, "监控客流数据同步时间");
+                if (responseBase.isStatus()) {
+                    log.debug("客流原始数据同步时间配置 {}-{} {}", startTime, endTime, responseBase.getMessage());
                 } else {
+                    flag = false;
+                    log.error("客流原始数据同步时间配置 {}-{} {}", startTime, endTime, responseBase.getMessage());
                     break;
                 }
             } while (endTime.compareTo(nowTime) < 0);
@@ -185,8 +193,62 @@ public class PassengerFlowServiceImpl extends BaseApiService {
         if (pagination != null && pagination.getCount() > 0) {
             return pagination.getData();
         } else {
-            log.info("未获取到监控客流设备信息");
+            log.error("未获取到监控客流设备信息");
             return null;
         }
+    }
+
+    public void passengerFlow(CommEventLog commEventLog) {
+        String extInfo = commEventLog.getExtInfo().toStringUtf8();
+        JSONObject jsonObject = XmlUtil.xml2json(extInfo);
+        ThirdPassengerFlowMq thirdPassengerFlowMq = jsonObject.getObject("ExtEventInfo", ThirdPassengerFlowMq.class);
+        //客流监控点id
+        String sourceIdx = commEventLog.getSourceIdx();
+        CameraDevice cameraDevice = queryUtil.getCameraDeviceByIndexCode(sourceIdx);
+        //根据sourceIdx未找到对应的监控点
+        if (Objects.isNull(cameraDevice)) {
+            log.error("客流监控设备id{} 未匹配到监控设备信息", sourceIdx);
+            return;
+        }
+        PassengerFlowDevice passengerFlowDevice = new PassengerFlowDevice();
+        //组织名称
+        String regionIdx = commEventLog.getRegionIdx();
+        passengerFlowDevice.setParentNo(regionIdx);
+        passengerFlowDevice.setDeviceNo(sourceIdx);
+        //客流监控点名称
+        String sourceName = commEventLog.getSourceName();
+        passengerFlowDevice.setDeviceName(sourceName);
+        String deviceIp = cameraDevice.getDeviceIp() + "_" + cameraDevice.getChannelNo();
+        passengerFlowDevice.setDeviceIp(deviceIp);
+        //先保存客流监控点
+        ResponseBase responseBase = queryUtil.saveOrUpdatePassengerFlowDevice(passengerFlowDevice);
+        if (!responseBase.isStatus()) {
+            return;
+        }
+        //客流记录数据封装
+        PassengerFlowRecordV2 passengerFlowRecordV2 = new PassengerFlowRecordV2();
+        passengerFlowRecordV2.setDeviceNo(sourceIdx);
+        passengerFlowRecordV2.setDeviceName(sourceName);
+        String startTime = thirdPassengerFlowMq.getStartTime();
+        passengerFlowRecordV2.setStartTime(startTime);
+        String endTime = thirdPassengerFlowMq.getEndTime();
+        passengerFlowRecordV2.setEndTime(endTime);
+        Integer enterNum = thirdPassengerFlowMq.getEnterNum();
+        passengerFlowRecordV2.setEnterNum(enterNum);
+        Integer leaveNum = thirdPassengerFlowMq.getLeaveNum();
+        passengerFlowRecordV2.setLeaveNum(leaveNum);
+        Integer frmIn = thirdPassengerFlowMq.getFrmIn();
+        passengerFlowRecordV2.setTotalIn(frmIn);
+        Integer frmOut = thirdPassengerFlowMq.getFrmOut();
+        passengerFlowRecordV2.setTotalOut(frmOut);
+        passengerFlowRecordV2.setDeviceIp(deviceIp);
+        //存redis
+        log.debug("监控客流数据 监控点名称 {} 上传时间 {}-{}", sourceName, startTime, endTime);
+        try {
+            redisUtil.set(RedisKey.PASSENGER_FLOW_INFO.concat(deviceIp), passengerFlowRecordV2, EXPIRE_TIME_70);
+        } catch (Exception e) {
+            log.error("监控客流数据缓存异常 {}-{} {}-{} ", startTime, endTime, deviceIp, sourceName);
+        }
+        //存储
     }
 }

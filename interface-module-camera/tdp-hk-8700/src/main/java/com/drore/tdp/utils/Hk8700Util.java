@@ -1,18 +1,15 @@
 package com.drore.tdp.utils;
 
 import com.alibaba.fastjson.JSONObject;
-import com.drore.cloud.sdk.client.CloudQueryRunner;
 import com.drore.cloud.sdk.common.util.MD5Util;
-import com.drore.cloud.sdk.domain.Pagination;
+import com.drore.tdp.bo.EventDis.CommEventLog;
 import com.drore.tdp.common.utils.HttpClientUtil;
 import com.drore.tdp.constant.Hk8700Constant;
-import com.drore.tdp.domain.camera.CameraDevice;
-import com.drore.tdp.domain.table.Table;
+import com.google.protobuf.InvalidProtocolBufferException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.HashMap;
-import java.util.Map;
+import javax.jms.BytesMessage;
+import javax.jms.JMSException;
 
 /**
  * 描述:
@@ -23,16 +20,11 @@ import java.util.Map;
  */
 @Slf4j
 public class Hk8700Util {
-
-    @Autowired
-    private CloudQueryRunner runner;
-
     /**
      * 获取默认用户UUID
      *
      * @return
      */
-
     public static String getDefaultUserUuid(String host, String appKey, String secret) {
         String path = Hk8700Constant.GET_DEFAULT_USER_UUID;
         JSONObject param = new JSONObject();
@@ -59,5 +51,28 @@ public class Hk8700Util {
         String token = MD5Util.getMD5Str(md5String).toUpperCase();
         url.append("?token=").append(token);
         return url.toString();
+    }
+
+    /**
+     * 解析mq推送的消息
+     *
+     * @param message
+     * @return
+     */
+    public static CommEventLog getCommEventLog(BytesMessage message) {
+        try {
+            long length = message.getBodyLength();
+            byte[] bt = new byte[(int) length];
+            // 将BytesMessage转换为byte类型
+            message.readBytes(bt);
+            // 壳文件字段，EventDis类为event_dis.proto文件解析而来，CommEventLog类为事件壳文件类
+            return CommEventLog.parseFrom(bt);
+        } catch (JMSException e) {
+            log.error("JMSException {}", e);
+            return null;
+        } catch (InvalidProtocolBufferException e) {
+            log.error("InvalidProtocolBufferException {}", e);
+            return null;
+        }
     }
 }

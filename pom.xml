@@ -21,6 +21,7 @@
         <module>tdp-sdk</module>
         <module>api-module-camera</module>
         <module>tdp-basic</module>
+        <module>tdp-elasticsearch</module>
     </modules>
 
     <groupId>com.drore.tdp</groupId>

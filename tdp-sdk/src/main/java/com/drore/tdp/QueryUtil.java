@@ -11,6 +11,7 @@ import com.drore.tdp.domain.camera.CameraDevice;
 import com.drore.tdp.domain.camera.CameraGroup;
 import com.drore.tdp.domain.flow.PassengerFlowDevice;
 import com.drore.tdp.domain.flow.PassengerFlowRecord;
+import com.drore.tdp.domain.park.CarParkChargeRecord;
 import com.drore.tdp.domain.park.CarParkDevice;
 import com.drore.tdp.domain.park.CarParkRecord;
 import com.drore.tdp.domain.table.Table;
@@ -20,10 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 描述:
@@ -172,8 +170,6 @@ public class QueryUtil extends BaseApiService {
         Integer integer = clearByModified(Table.CAR_PARK_DEVICE, time);
         if (integer > 0) {
             log.info("删除无效停车场设备成功,共删除:{}个", integer);
-        } else {
-            log.info("平台停车场设备未发生变化");
         }
     }
 
@@ -223,25 +219,17 @@ public class QueryUtil extends BaseApiService {
         });
         if (CollectionUtils.isNotEmpty(add)) {
             RestMessage insertBatch = runner.insertBatch(Table.CAR_PARK_DEVICE, JSON.toJSON(add));
-            if (insertBatch != null && insertBatch.isSuccess()) {
-                log.info("停车场设备信息新增成功,共新增:{}条数据", add.size());
-            } else {
+            if (Objects.isNull(insertBatch) && !insertBatch.isSuccess()) {
                 log.error("新增停车场设备信息失败:{}", insertBatch.getMessage());
                 return error();
             }
-        } else {
-            log.info("没有新增停车场设备");
         }
         if (CollectionUtils.isNotEmpty(update)) {
             RestMessage updateBatch = runner.updateBatch(Table.CAR_PARK_DEVICE, JSON.toJSON(update));
-            if (updateBatch != null && updateBatch.isSuccess()) {
-                log.info("停车场设备信息更新成功,共更新:{}条数据", update.size());
-            } else {
+            if (Objects.isNull(updateBatch) && !updateBatch.isSuccess()) {
                 log.error("停车场设备信息更新失败:{}", updateBatch.getMessage());
                 return error();
             }
-        } else {
-            log.info("没有更新停车场设备");
         }
         deleteOldCarParkDevice(time);
         return success();
@@ -250,10 +238,19 @@ public class QueryUtil extends BaseApiService {
     public ResponseBase saveCarParkRecord(List<CarParkRecord> carParkRecords) {
         RestMessage insertBatch = runner.insertBatch(Table.CAR_PARK_RECORD, JSON.toJSON(carParkRecords));
         if (insertBatch.isSuccess()) {
-            log.info("新增过车记录成功,共新增:{}条数据", carParkRecords.size());
             return success();
         } else {
             log.error("新增过车记录失败:{}", insertBatch.getMessage());
+            return error();
+        }
+    }
+
+    public ResponseBase saveCarParChargeRecord(List<CarParkChargeRecord> carParkChargeRecords) {
+        ResponseBase responseBase = batchSave(Table.CAR_PARK_CHARGE_RECORD, carParkChargeRecords);
+        if (responseBase.isStatus()) {
+            return success();
+        } else {
+            log.error("新增停车场收费记录失败:{}", responseBase.getMessage());
             return error();
         }
     }
@@ -288,7 +285,6 @@ public class QueryUtil extends BaseApiService {
     public ResponseBase savePassengerFlowRecord(List<PassengerFlowRecord> passengerFlowRecords) {
         ResponseBase responseBase = batchSave(Table.CAR_PARK_RECORD, passengerFlowRecords);
         if (responseBase.isStatus()) {
-            log.info("新增客流监控数据记录成功,共新增:{}条数据", passengerFlowRecords.size());
             return success();
         } else {
             log.error("新增客流监控数据记录失败:{}", responseBase.getMessage());
@@ -337,9 +333,8 @@ public class QueryUtil extends BaseApiService {
         map.put("code", code);
         Pagination<Map> pagination = runner.queryListByExample(Table.SYNC_TIME_CONFIG, map);
         if (pagination.getSuccess() && pagination.getCount() > 0) {
-            return String.valueOf(pagination.getData().get(0).get("sync_time"));
+            return String.valueOf(pagination.getData().get(0).get("value"));
         } else {
-            log.error("同步时间未设置");
             return null;
         }
     }
@@ -347,13 +342,16 @@ public class QueryUtil extends BaseApiService {
     /**
      * 新增|更新同步时间配置
      *
-     * @param map
+     * @param code
+     * @param value
      * @return
      */
-    public ResponseBase saveOrUpdateSyncTime(Map map) {
-        Map mapNew = new HashMap(1);
-        mapNew.put("code", map.get("code"));
-        String id = deduplication(Table.SYNC_TIME_CONFIG, mapNew);
+    public ResponseBase saveOrUpdateSyncTime(String code, String value, String description) {
+        Map map = new HashMap(1);
+        map.put("code", code);
+        String id = deduplication(Table.SYNC_TIME_CONFIG, map);
+        map.put("value", value);
+        map.put("description", description);
         if (StringUtils.isEmpty(id)) {
             RestMessage insert = runner.insert(Table.SYNC_TIME_CONFIG, JSON.toJSON(map));
             if (insert.isSuccess()) {
@@ -377,14 +375,13 @@ public class QueryUtil extends BaseApiService {
      * @param cameraUuid
      * @return
      */
-    public CameraDevice getCameraDeviceByCameraUuid(String cameraUuid) {
+    public CameraDevice getCameraDeviceByIndexCode(String cameraUuid) {
         Map map = new HashMap(1);
         map.put("index_code", cameraUuid);
         Pagination<CameraDevice> pagination = runner.queryListByExample(CameraDevice.class, Table.CAMERA_DEVICE, map);
         if (pagination != null && pagination.getCount() > 0) {
             return pagination.getData().get(0);
         } else {
-            log.info("客流监控点-监控点id:{} 未匹配到对应的监控设备信息", cameraUuid);
             return null;
         }
     }

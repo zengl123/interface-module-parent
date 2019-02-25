@@ -88,8 +88,36 @@ public interface Hk8700Constant {
      */
     int EVENT_TYPE_GPS = 851969;
     /**
-     * 监控客流
+     * 监控客流事件码
      */
     int EVENT_TYPE_PASSENGER_FLOW = 131627;
+    /**
+     * 危险区域事件码
+     */
+    int EVENT_TYPE_DANGEROUS = 131585;
+    /**
+     * 行为分析(人员密度)事件码
+     */
+    int EVENT_TYPE_BEHAVIOURAL = 131655;
+    /**
+     * SOS事件码
+     */
+    int EVENT_TYPE_SOS = 327687;
+    /**
+     * 火警事件码
+     */
+    int EVENT_TYPE_FIRE = 196353;
 
+    /**
+     * <!—告警事件状态，0 瞬时，1 脉冲开始，2 脉冲持续，3 脉冲结束 -->
+     */
+    int DANGEROUS_STATUS = 0;
+    /**
+     * <!—告警事件状态，0 瞬时，1 脉冲开始，2 脉冲持续，3 脉冲结束 -->
+     */
+    int SOS_STATUS = 1;
+    /**
+     * 0：瞬时事件，保存；1：事件开始，保存；2：事件结束，更新结束时间；3：事件脉冲，客户端和服务器使用，CMS不用；4：事件更新，联动结果更新
+     */
+    int FIRE_STATUS = 0;
 }

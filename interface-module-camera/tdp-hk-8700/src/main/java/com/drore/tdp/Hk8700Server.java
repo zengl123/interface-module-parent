@@ -14,5 +14,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class Hk8700Server {
     public static void main(String[] args) {
         SpringApplication.run(Hk8700Server.class, args);
+
     }
 }

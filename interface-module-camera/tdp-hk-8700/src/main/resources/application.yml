@@ -49,10 +49,11 @@ tdp:
     #客流
     common-destination: openapi.vss.topic
   #第三方接口配置参数
-  params:
     host: http://192.168.10.21
     appKey: fac30958
     secret: 40b4809c4f204f80a9d81a288e5a4d8c
+  control:
+    url: http://192.168.10.14:10086/alarm/triggerAlarm.json
   #监控
   #定时任务
   schedule:
@@ -61,10 +62,12 @@ tdp:
     #停车场
     sync-car-park-device: 0 0/1 * * * ?
     sync-car-park-record: 0 0/1 * * * ?
+    sync-car-park-charge-record: 0 0/1 * * * ?
     #监控客流
     sync-passenger-flow-record: 0 0/1 * * * ?
   first-sync-time:
     car-park-record: 2018-08-01 00:00:00
+    car-park-charge-record: 2018-08-01 00:00:00
     passenger-flow-record: 2019-02-19 00:00:00
 #log
 logging:

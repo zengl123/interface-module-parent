@@ -1,5 +1,6 @@
 package com.drore.tdp.common.utils;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
@@ -14,6 +15,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * 描述:
@@ -90,7 +92,7 @@ public class HttpClientUtil {
      * @param jsonParam 参数
      * @return
      */
-    public static JSONObject httpPost(String url, JSONObject jsonParam,Integer socketTimeout,Integer connectTimeout) {
+    public static JSONObject httpPost(String url, JSONObject jsonParam, Integer socketTimeout, Integer connectTimeout) {
         // post请求返回结果
         CloseableHttpClient httpClient = HttpClients.createDefault();
         JSONObject jsonResult = null;
@@ -100,6 +102,21 @@ public class HttpClientUtil {
         httpPost.setConfig(config);
         jsonResult = getJsonObject(url, jsonParam, httpClient, jsonResult, httpPost);
         return jsonResult;
+    }
+
+    public static <T> T httpPost(String url, JSONObject jsonParam, Class<T> t) {
+        // post请求返回结果
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        JSONObject jsonResult = null;
+        HttpPost httpPost = new HttpPost(url);
+        // 设置请求和传输超时时间
+        httpPost.setConfig(requestConfig);
+        jsonResult = getJsonObject(url, jsonParam, httpClient, jsonResult, httpPost);
+        if (Objects.isNull(jsonResult)) {
+            return JSONObject.parseObject(JSON.toJSONString(jsonResult), t);
+        } else {
+            return null;
+        }
     }
 
     private static JSONObject getJsonObject(String url, JSONObject jsonParam, CloseableHttpClient httpClient, JSONObject jsonResult, HttpPost httpPost) {
