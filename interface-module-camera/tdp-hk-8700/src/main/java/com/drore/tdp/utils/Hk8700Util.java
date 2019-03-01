@@ -38,7 +38,7 @@ public class Hk8700Util {
         } else {
             defaultUuid = "";
         }
-        log.info("[响应结果-默认用户id] {}", defaultUuid);
+        log.debug("[响应结果-默认用户id] {}", defaultUuid);
         return defaultUuid;
     }
 

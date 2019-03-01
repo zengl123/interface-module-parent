@@ -66,7 +66,7 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
      */
     @Override
     public ResponseBase syncCamera() {
-        String defaultUserUuid = getDefaultUserUuid(host, appKey, secret);
+        /*String defaultUserUuid = getDefaultUserUuid(host, appKey, secret);
         if (StringUtils.isEmpty(defaultUserUuid)) {
             return error("海康8700监控数据同步失败-获取默认用户id失败");
         }
@@ -96,7 +96,14 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
             return success("海康8700监控数据同步成功");
         } else {
             return error("海康8700监控数据同步失败-监控设备数据存储失败");
+        }*/
+        System.out.println("host = " + host);
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+        return success();
     }
 
     /**
@@ -204,22 +211,6 @@ public class CameraServiceImpl extends BaseApiService implements CameraService {
         String path = Hk8700Constant.GET_CAMERA;
         List<JSONObject> list = listDevice(host, appKey, secret, defaultUuid, path);
         List<ThirdCameraDevice> thirdCameraDevices = list.stream().map(object -> JSON.toJavaObject(object, ThirdCameraDevice.class)).collect(Collectors.toList()).stream().filter(thirdCameraDevice -> !checkCameraDevice(thirdCameraDevice)).collect(Collectors.toList());
-       /* return thirdCameraDevices.stream().map(thirdCameraDevice -> {
-            String cameraUuid = thirdCameraDevice.getCameraUuid();
-            String previewParamByPlanUuid = getPreviewParamByPlanUuid(host, appKey, secret, defaultUuid, cameraUuid, netZoneUuid);
-            thirdCameraDevice.setPreviewParam(previewParamByPlanUuid);
-            JSONObject recordPlanByCameraUuid = getRecordPlanByCameraUuid(host, appKey, secret, defaultUuid, cameraUuid, netZoneUuid);
-            //录像计划不为空
-            if (recordPlanByCameraUuid != null) {
-                String recordPlanUuid = recordPlanByCameraUuid.getString("recordPlanUuid");
-                Integer planType = recordPlanByCameraUuid.getInteger("planType");
-                String playBackParamByPlanUuid = getPlayBackParamByPlanUuid(host, appKey, secret, defaultUuid, planType, recordPlanUuid, netZoneUuid);
-                thirdCameraDevice.setPlayBackParam(playBackParamByPlanUuid);
-            } else {
-                log.info("{} 监控录像计划为空,没有回放参数", thirdCameraDevice.getCameraName());
-            }
-            return thirdCameraDevice;
-        }).collect(Collectors.toList());*/
         List<ThirdCameraDevice> resultList = new ArrayList<>();
         CompletableFuture[] futures = new CompletableFuture[thirdCameraDevices.size()];
         for (int i = 0; i < thirdCameraDevices.size(); i++) {

@@ -14,7 +14,7 @@ import org.springframework.cloud.openfeign.FeignClient;
  * @Version 1.0<br>
  * @Modified By <br>
  */
-@FeignClient(name = "hk-camera-7600-server")
+@FeignClient(name = "${tdp.feign.camera}")
 public interface CameraServiceImplFeign extends CameraService {
 
 }

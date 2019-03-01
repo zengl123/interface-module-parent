@@ -1,3 +1,6 @@
+#服务端口
+server:
+  port: 8080
 spring:
   application:
     name: tdp-api-server
@@ -19,9 +22,6 @@ spring:
         min-idle: 0
     #连接超时时间
     timeout: 10000
-#服务端口
-server:
-  port: 8080
 #log
 logging:
   config: classpath:log4j2.xml
@@ -46,6 +46,7 @@ eureka:
     fetch-registry: true
     service-url:
       defaultZone: http://${eureka.instance.hostname}:8100/eureka/
-ribbon:
-  ReadTimeout: 120000
-  ConnectTimeout: 120000
+#feign配置参数
+tdp:
+  feign:
+    camera: tdp-hk-8700-server

@@ -16,7 +16,7 @@
         </Console>
         <RollingRandomAccessFile name="debug_appender"
                                  immediateFlush="true" fileName="${LOG_HOME}/debug.log"
-                                 filePattern="${LOG_HOME}/debug.%d{yyyy-MM-dd}.log.gz">
+                                 filePattern="${LOG_HOME}/debug.%d{yyyy-MM-dd}.log">
             <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="DENY"/>
             <PatternLayout>
                 <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%p][%c{40}][%t] %m%n</pattern>
@@ -27,7 +27,7 @@
         </RollingRandomAccessFile>
         <RollingRandomAccessFile name="info_appender"
                                  immediateFlush="true" fileName="${LOG_HOME}/info.log"
-                                 filePattern="${LOG_HOME}/info.%d{yyyy-MM-dd}.log.gz">
+                                 filePattern="${LOG_HOME}/info.%d{yyyy-MM-dd}.log">
             <ThresholdFilter level="info" onMatch="ACCEPT" onMismatch="DENY"/>
             <PatternLayout>
                 <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%p][%c{40}][%t] %m%n</pattern>
@@ -38,7 +38,7 @@
         </RollingRandomAccessFile>
         <RollingRandomAccessFile name="error_appender"
                                  immediateFlush="true" fileName="${LOG_HOME}/error.log"
-                                 filePattern="${LOG_HOME}/error.%d{yyyy-MM-dd}.log.gz">
+                                 filePattern="${LOG_HOME}/error.%d{yyyy-MM-dd}.log">
             <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
             <PatternLayout>
                 <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%p][%c{40}][%t] %m%n</pattern>
@@ -47,10 +47,9 @@
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
             </Policies>
         </RollingRandomAccessFile>
-
         <RollingRandomAccessFile name="gps_debug_appender"
                                  immediateFlush="true" fileName="${LOG_HOME}/gps_debug.log"
-                                 filePattern="${LOG_HOME}/gps_debug.%d{yyyy-MM-dd}.log.gz">
+                                 filePattern="${LOG_HOME}/gps_debug.%d{yyyy-MM-dd}.log">
             <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="DENY"/>
             <PatternLayout>
                 <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%p][%c{40}][%t] %m%n</pattern>
@@ -61,7 +60,7 @@
         </RollingRandomAccessFile>
         <RollingRandomAccessFile name="passenger_flow_debug_appender"
                                  immediateFlush="true" fileName="${LOG_HOME}/passenger_flow_debug.log"
-                                 filePattern="${LOG_HOME}/passenger_flow_debug.%d{yyyy-MM-dd}.log.gz">
+                                 filePattern="${LOG_HOME}/passenger_flow_debug.%d{yyyy-MM-dd}.log">
             <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="DENY"/>
             <PatternLayout>
                 <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%p][%c{40}][%t] %m%n</pattern>
@@ -72,7 +71,7 @@
         </RollingRandomAccessFile>
         <RollingRandomAccessFile name="car_park_debug_appender"
                                  immediateFlush="true" fileName="${LOG_HOME}/car_park_debug.log"
-                                 filePattern="${LOG_HOME}/car_park_debug.%d{yyyy-MM-dd}.log.gz">
+                                 filePattern="${LOG_HOME}/car_park_debug.%d{yyyy-MM-dd}.log">
             <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="DENY"/>
             <PatternLayout>
                 <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%p][%c{40}][%t] %m%n</pattern>
@@ -83,7 +82,7 @@
         </RollingRandomAccessFile>
         <RollingRandomAccessFile name="personnel_density_debug_appender"
                                  immediateFlush="true" fileName="${LOG_HOME}/personnel_density_debug.log"
-                                 filePattern="${LOG_HOME}/personnel_density_debug.%d{yyyy-MM-dd}.log.gz">
+                                 filePattern="${LOG_HOME}/personnel_density_debug.%d{yyyy-MM-dd}.log">
             <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="DENY"/>
             <PatternLayout>
                 <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}][%p][%c{40}][%t] %m%n</pattern>
