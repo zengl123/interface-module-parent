@@ -146,4 +146,40 @@ public class HttpClientUtil {
         }
         return jsonResult;
     }
+
+    public static void main(String[] args) {
+        while (true) {
+            getSource("http://ms.mayikt.com/detail/1");
+        }
+    }
+
+    public static String getSource(String url) {
+        String html = new String();
+        //创建Http请求实例，URL 如：https://cd.lianjia.com/
+        HttpGet httpget = new HttpGet(url);
+        // 模拟浏览器，避免被服务器拒绝，返回返回403 forbidden的错误信息
+        httpget.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36");
+        CloseableHttpResponse response = null;
+        // 使用默认的HttpClient
+        CloseableHttpClient httpclient = HttpClients.createDefault();
+        try {
+            response = httpclient.execute(httpget);
+            // 返回 200 表示成功
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+                // 获取服务器响应实体的内容
+                html = EntityUtils.toString(response.getEntity(), "utf-8");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (response != null) {
+                try {
+                    response.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return html;
+    }
 }
